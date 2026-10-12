@@ -10,7 +10,7 @@ Everything lives in [`lib/main.dart`](lib/main.dart):
 * Typo-tolerant fuzzy search across all 249 countries using
   `TextSearch(...).fastSearch('germny', limit: 3)`.
 * Timezone-safe date arithmetic with the `DateOperations` (`dateOnly`,
-  `addDays`, `addYears`) and `DateCollection` (`max()`) extensions.
+  `addDays`, `addMonths`, `addYears`) and `DateCollection` (`max()`) extensions.
 * A `MaterialApp` wired to `SaibleLocalizations.supportedLocales` and
   `SaibleLocalizations.localizationsDelegates`, so country names follow the
   active locale and `material_ui`'s own Material strings stay localized too.

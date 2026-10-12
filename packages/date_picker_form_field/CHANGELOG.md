@@ -1,3 +1,10 @@
+## 1.0.2
+
+* Bumped version to `1.0.2` across the Saible Consulting package suite.
+* Bumped `saible_consulting_core` dependency constraint to `^1.0.2`.
+* Bumped `material_ui` dependency constraint to `^1.6.0`.
+* Bumped `cupertino_ui` dependency constraint to `^1.1.2`.
+
 ## 1.0.1
 
 * Bumped version to `1.0.1` across the Saible Consulting package suite.

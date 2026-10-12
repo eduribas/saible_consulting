@@ -196,7 +196,27 @@ void main() {
       final dt = DateTime(2020, 1, 15, 10, 30, 45);
       expect(dt.dateOnly(), DateTime(2020, 1, 15));
       expect(dt.addDays(5), DateTime(2020, 1, 20, 10, 30, 45));
+      expect(dt.addMonths(2), DateTime(2020, 3, 15, 10, 30, 45));
       expect(dt.addYears(2), DateTime(2022, 1, 15, 10, 30, 45));
+    });
+
+    test('DateOperations.addMonths rolls the year over and normalizes overflow', () {
+      final dt = DateTime(2020, 11, 15, 8);
+
+      // Rolling forward past December lands in the following January.
+      expect(dt.addMonths(3), DateTime(2021, 2, 15, 8));
+      // Rolling backward past January lands in the previous November.
+      expect(dt.addMonths(-12), DateTime(2019, 11, 15, 8));
+
+      // 31 January + 1 month normalizes through the shorter February. In a leap
+      // year February has 29 days, so the remainder spills into March 2...
+      expect(DateTime(2020, 1, 31).addMonths(1), DateTime(2020, 3, 2));
+      // ...and in a non-leap year (28 days) it spills into March 3.
+      expect(DateTime(2021, 1, 31).addMonths(1), DateTime(2021, 3, 3));
+
+      // Adding zero months is a no-op that preserves every component.
+      final DateTime now = DateTime(2020, 6, 15, 12, 30, 45, 123, 456);
+      expect(now.addMonths(0), now);
     });
   });
 

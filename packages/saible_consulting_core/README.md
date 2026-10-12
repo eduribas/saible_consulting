@@ -17,7 +17,7 @@ Shared core domain models, high-performance fuzzy search, localization delegates
   - **Bounded Top-$k$ Selection (`fastSearch`)**: Retains only the best matching candidates with early termination, eliminating the need to score or sort full datasets on every keystroke.
   - **Zero-Allocation Tokenization**: Search terms precompute lowercased, stripped, and word-split representations up front, keeping UI typing completely jank-free.
 - **Timezone-Safe Date Arithmetic**:
-  - `DateOperations` (`dateOnly()`, `addDays()`, `addYears()`) manipulates calendar year, month, and day components directly rather than naive duration addition, completely eliminating Daylight Saving Time (DST) timezone shift bugs.
+  - `DateOperations` (`dateOnly()`, `addDays()`, `addMonths()`, `addYears()`) manipulates calendar year, month, and day components directly rather than naive duration addition, completely eliminating Daylight Saving Time (DST) timezone shift bugs.
 - **`material_ui` Localization Plumbing (`SaibleLocalizations`)**:
   - `SaibleLocalizations.localizationsDelegates` pairs `CountryLocalizations.delegate` with `material_ui`'s `GlobalMaterialLocalizations.delegates`, so country names *and* Material-owned strings (dialog buttons, text selection toolbars) resolve in the same locales.
   - `material_ui` widgets never read the legacy `package:flutter_localizations` delegates that `CountryLocalizations.localizationsDelegates` bundles, so `SaibleLocalizations` is the list to spread into `MaterialApp` in a `material_ui` app.
@@ -44,7 +44,7 @@ Add `saible_consulting_core` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  saible_consulting_core: ^1.0.1
+  saible_consulting_core: ^1.0.2
 ```
 
 Import the package in your Dart code:
@@ -107,9 +107,10 @@ import 'package:saible_consulting_core/application/date_utils.dart';
 final now = DateTime.now();
 final date = now.dateOnly(); // Strip time component
 final nextWeek = date.addDays(7); // Safe across DST transitions
+final nextQuarter = date.addMonths(3); // Rolls over the year boundary
 final adultDate = date.addYears(-18);
 
-final dates = [date, nextWeek, adultDate];
+final dates = [date, nextWeek, nextQuarter, adultDate];
 print(dates.max()); // nextWeek
 ```
 
