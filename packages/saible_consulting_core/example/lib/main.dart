@@ -58,7 +58,7 @@ class const CoreExamplePage({super.key}) extends StatelessWidget {
 
     // Timezone-safe calendar arithmetic: no DST skew, no duration maths.
     final DateTime today = DateTime.now().dateOnly();
-    final List<DateTime> dates = [today, today.addDays(30), today.addYears(-18)];
+    final List<DateTime> dates = [today, today.addDays(30), today.addMonths(3), today.addYears(-18)];
     final DateTime latest = dates.max();
 
     return Scaffold(
@@ -77,6 +77,7 @@ class const CoreExamplePage({super.key}) extends StatelessWidget {
           const _SectionTitle('Date extensions'),
           Text('dateOnly(): ${_formatDate(today)}'),
           Text('addDays(30): ${_formatDate(today.addDays(30))}'),
+          Text('addMonths(3): ${_formatDate(today.addMonths(3))}'),
           Text('addYears(-18): ${_formatDate(today.addYears(-18))}'),
           Text('dates.max(): ${_formatDate(latest)}'),
         ],

@@ -31,6 +31,20 @@ extension DateOperations on DateTime {
   // which will break the implementation when you move through a timezone.
   DateTime addDays(int days) => DateTime(year, month, day + days, hour, minute, second, millisecond, microsecond);
 
+  /// Adds the given number of [months] preserving the time and day components.
+  ///
+  /// This is safer than using add(Duration(days: months * 30)), because a month
+  /// is not a fixed number of days and such an approximation would silently
+  /// drift. Constructing the [DateTime] directly keeps the arithmetic in
+  /// calendar terms, so it is free of timezone offset issues just like
+  /// [addDays] and [addYears].
+  ///
+  /// Dart's [DateTime] constructor normalizes overflow, so the result rolls
+  /// over the year boundary (e.g. adding one month to December lands in the
+  /// following January) and clamps the day to the last day of the shorter
+  /// target month (e.g. 31 January + 1 month yields early March).
+  DateTime addMonths(int months) => DateTime(year, month + months, day, hour, minute, second, millisecond, microsecond);
+
   /// Adds the given number of [years] preserving the time and day components.
   DateTime addYears(int years) => DateTime(year + years, month, day, hour, minute, second, millisecond, microsecond);
 }

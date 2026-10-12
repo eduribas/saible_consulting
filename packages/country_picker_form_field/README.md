@@ -54,8 +54,8 @@ Add `country_picker_form_field` and [`saible_consulting_core`](https://pub.dev/p
 
 ```yaml
 dependencies:
-  country_picker_form_field: ^1.0.1
-  saible_consulting_core: ^1.0.1
+  country_picker_form_field: ^1.0.2
+  saible_consulting_core: ^1.0.2
 ```
 
 > **UI library:** this package is built on `material_ui`, the official Flutter

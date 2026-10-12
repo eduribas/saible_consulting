@@ -1,3 +1,10 @@
+## 1.0.2
+
+* Bumped version to `1.0.2` across the Saible Consulting package suite.
+* Bumped `saible_consulting_core` dependency constraint to `^1.0.2`.
+* Bumped `material_ui` dependency constraint to `^1.6.0`.
+* Bumped `dlibphonenumber` dependency constraint to `^1.1.74`.
+
 ## 1.0.1
 
 * Fixed initial value and example hint formatting so that pre-filled numbers render identically to as-you-type input.
