@@ -26,6 +26,7 @@ import 'package:form_demo/presentation/language_menu.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:phone_number_form_field/presentation/phone_number_form_field.dart';
+import 'package:saible_consulting_core/saible_consulting_core.dart';
 
 /// The main registration form screen of the demo application.
 ///
@@ -88,6 +89,11 @@ class const _NationalityField() extends StatelessWidget {
       selector: (state) => state.nationality,
       builder: (context, nationality) => ListTile(
         title: CountryPickerFormField(
+          favorites: const [
+            Iso3166Country.unitedKingdom,
+            Iso3166Country.ireland,
+            Iso3166Country.france,
+          ],
           decoration: InputDecoration(
             labelText: l10n.nationalityLabel,
             errorText: switch (nationality.error) {
