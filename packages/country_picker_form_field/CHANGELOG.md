@@ -1,3 +1,15 @@
+## 1.0.4
+
+* Added an optional `favorites` field (`List<Iso3166Country>`) to
+  `CountryPickerFormField`. Favourite countries are listed first in the
+  suggestions view, in the order supplied, and are separated from the remaining
+  matches by a `Divider` whenever both groups contribute to the results.
+  Favourites remain subject to the active search query, and a lone group is
+  never trailed by a stray divider.
+* Exposed the new `CountryPickerFormField.favoritesDividerKey` testing key.
+* Bumped version to `1.0.4` across the Saible Consulting package suite.
+* Bumped `saible_consulting_core` dependency constraint to `^1.0.4`.
+
 ## 1.0.3
 
 * Bumped version to `1.0.3` across the Saible Consulting package suite.
