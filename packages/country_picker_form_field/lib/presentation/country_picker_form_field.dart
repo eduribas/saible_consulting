@@ -36,9 +36,76 @@ class const _DefaultSuffix({
   }
 }
 
+/// The suggestions for a country search query, split into favourite and
+/// remaining matches so the two groups can be rendered separately.
+class _CountrySuggestions({
+  required this.favorites,
+  required this.others,
+}) {
+  /// The favourite countries matching the query, in the caller's order.
+  final List<Iso3166Country> favorites;
+
+  /// The non-favourite countries matching the query.
+  final List<Iso3166Country> others;
+
+  /// Whether both groups contain at least one suggestion, in which case the
+  /// suggestions view separates them with a divider.
+  bool get hasDivider => favorites.isNotEmpty && others.isNotEmpty;
+}
+
+/// A prepared country search over a locale's [TextSearchItem]s.
+///
+/// The terms are partitioned once, at construction, into favourites and the
+/// remaining countries so that favourites can be matched first on every
+/// keystroke without the shared result limit pushing them out (for example when
+/// the query is empty and the unfiltered list would otherwise start
+/// alphabetically). Favourites retain the caller's order, with duplicates and
+/// unknown countries discarded.
+class _CountrySearch._(this._favorites, this._others) {
+  factory _CountrySearch({
+    required List<TextSearchItem<Iso3166Country>> searchTerms,
+    required List<Iso3166Country> favorites,
+  }) {
+    final termsByCountry = {for (final term in searchTerms) term.item: term};
+    final favoriteCountries = <Iso3166Country>{};
+    final favoriteItems = <TextSearchItem<Iso3166Country>>[];
+    for (final country in favorites) {
+      final term = termsByCountry[country];
+      if (term != null && favoriteCountries.add(country)) favoriteItems.add(term);
+    }
+    final otherItems = <TextSearchItem<Iso3166Country>>[
+      for (final term in searchTerms)
+        if (!favoriteCountries.contains(term.item)) term,
+    ];
+    return _CountrySearch._(TextSearch(favoriteItems), TextSearch(otherItems));
+  }
+
+  /// The highest number of suggestions shown at once, shared across the
+  /// favourites and remaining-countries groups.
+  static const int _maxSuggestions = 12;
+
+  /// The favourite countries' search terms, in the caller's order.
+  final TextSearch<Iso3166Country> _favorites;
+
+  /// The remaining countries' search terms.
+  final TextSearch<Iso3166Country> _others;
+
+  /// Matches the prepared terms against [query], listing favourite matches
+  /// first (in the caller's order) and remaining matches afterwards.
+  _CountrySuggestions suggest(String query) {
+    final favorites = _favorites.fastSearch(query, limit: _maxSuggestions);
+    final remaining = _maxSuggestions - favorites.length;
+    final others = remaining > 0
+        ? _others.fastSearch(query, limit: remaining)
+        : const <Iso3166Country>[];
+    return _CountrySuggestions(favorites: favorites, others: others);
+  }
+}
+
 class const _CountryPicker({
   required this.onCountryPicked,
   this.initial,
+  this.favorites,
   this.decoration,
   this.focusNode,
   this.validator,
@@ -47,6 +114,7 @@ class const _CountryPicker({
   static Key countrySuggestionKey(Iso3166Country country) => Key('countryPicker_country_${country.alpha2}');
   final void Function(Iso3166Country country) onCountryPicked;
   final Iso3166Country? initial;
+  final List<Iso3166Country>? favorites;
   final InputDecoration? decoration;
   final FocusNode? focusNode;
   final String? Function(Iso3166Country? country)? validator;
@@ -95,10 +163,13 @@ class _CountryPickerState() extends State<_CountryPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final searchTerms = context.watch<Countries>().searchTerms;
-    // Built once per rebuild (not per keystroke) since the search terms
-    // are stable for the current locale.
-    final textSearch = TextSearch(searchTerms);
+    // Prepared once per rebuild (not per keystroke): the search terms are
+    // stable for the current locale, so the favourites/remaining split is
+    // computed here rather than on every keystroke.
+    final search = _CountrySearch(
+      searchTerms: context.watch<Countries>().searchTerms,
+      favorites: widget.favorites ?? const <Iso3166Country>[],
+    );
     return SearchAnchor(
       key: CountryPickerFormField.countrySearchAnchorKey,
       searchController: controller,
@@ -120,23 +191,37 @@ class _CountryPickerState() extends State<_CountryPicker> {
       viewOnClose: () {
         controller.text = chosenCountry?.tr(context) ?? '';
       },
-      suggestionsBuilder: (context, controller) {
-        final results = textSearch.fastSearch(controller.text, limit: 12);
-        return [
-          for (final result in results)
-            NationTile(
-              key: _CountryPicker.countrySuggestionKey(result),
-              country: result,
-              onTap: () {
-                setState(() { chosenCountry = result; });
-                controller.closeView(result.tr(context));
-                widget.onCountryPicked(result);
-              },
-            ),
-        ];
-      },
+      suggestionsBuilder: (context, controller) => _suggestions(context, controller, search),
     );
   }
+
+  /// Renders the suggestions for the controller's current query: favourite
+  /// matches first, a divider when both groups are present, then the rest.
+  List<Widget> _suggestions(BuildContext context, SearchController controller, _CountrySearch search) {
+    final suggestions = search.suggest(controller.text);
+    return [
+      for (final country in suggestions.favorites)
+        _suggestionTile(context, controller, country),
+      // Only divide the two groups when each contributes at least one
+      // suggestion, so a lone group is never trailed by a stray divider.
+      if (suggestions.hasDivider)
+        const Divider(key: CountryPickerFormField.favoritesDividerKey),
+      for (final country in suggestions.others)
+        _suggestionTile(context, controller, country),
+    ];
+  }
+
+  /// A tappable suggestion for [country] that updates the selection, closes the
+  /// search view and reports the choice to the picker's `onCountryPicked`.
+  Widget _suggestionTile(BuildContext context, SearchController controller, Iso3166Country country) => NationTile(
+    key: _CountryPicker.countrySuggestionKey(country),
+    country: country,
+    onTap: () {
+      setState(() { chosenCountry = country; });
+      controller.closeView(country.tr(context));
+      widget.onCountryPicked(country);
+    },
+  );
 }
 
 /// A form field widget that allows selecting a country using a searchable view.
@@ -145,6 +230,7 @@ class const CountryPickerFormField({
   this.decoration,
   required this.onCountryPicked,
   this.initial,
+  this.favorites,
   this.focusNode,
   this.validator,
   this.onSaved,
@@ -154,6 +240,10 @@ class const CountryPickerFormField({
 
   /// The [Key] for the country search bar field.
   static const Key countrySearchBarKey = Key('countryPicker_searchBar');
+
+  /// The [Key] for the [Divider] separating favourites from the remaining
+  /// suggestions. Only present while both groups contribute a suggestion.
+  static const Key favoritesDividerKey = Key('countryPicker_favoritesDivider');
 
   /// Creates a [CountryPickerFormField].
   this;
@@ -170,6 +260,15 @@ class const CountryPickerFormField({
 
   /// The initially selected country, if any.
   final Iso3166Country? initial;
+
+  /// Countries to surface ahead of the rest of the results in the suggestions
+  /// view, for example a list of the user's most-used nationalities.
+  ///
+  /// Any favourites that match the current search are listed first, and are
+  /// separated from the remaining matches by a [Divider] whenever both groups
+  /// contribute at least one suggestion. Favourites are still subject to the
+  /// search query, so a favourite that does not match is not shown.
+  final List<Iso3166Country>? favorites;
 
   /// An optional [FocusNode] to control the focus of the field.
   final FocusNode? focusNode;
@@ -198,6 +297,7 @@ class const CountryPickerFormField({
     decoration: decoration, 
     onCountryPicked: onCountryPicked,
     initial: initial,
+    favorites: favorites,
     focusNode: focusNode,
     validator: validator,
     onSaved: onSaved,

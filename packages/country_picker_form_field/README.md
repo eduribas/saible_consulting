@@ -45,6 +45,7 @@ An accessible, high-performance country picker form field for Flutter applicatio
 - **Multi-Lingual Localization**: Displays localized country names matching the active Flutter app locale, with translations for all 39 supported languages.
 - **First-Class Form Integration**: Seamlessly works with `Form` through typed `validator` and `onSaved` callbacks that receive the selected `Iso3166Country`, plus `InputDecoration`, `onCountryPicked`, `Formz`, and state management solutions (BLoC, Riverpod, Provider).
 - **Flag Badge Affordance**: Displays clean suffix/prefix flag emojis for the active selection.
+- **Favourites First**: Supply an optional `favorites` list to pin frequently used countries to the top of the suggestions, separated from the rest by a divider.
 
 ---
 
@@ -54,8 +55,8 @@ Add `country_picker_form_field` and [`saible_consulting_core`](https://pub.dev/p
 
 ```yaml
 dependencies:
-  country_picker_form_field: ^1.0.3
-  saible_consulting_core: ^1.0.3
+  country_picker_form_field: ^1.0.4
+  saible_consulting_core: ^1.0.4
 ```
 
 > **UI library:** this package is built on `material_ui`, the official Flutter
@@ -221,6 +222,28 @@ CountryPickerFormField(
 )
 ```
 
+### Favourites
+
+Supply an optional `favorites` list to surface frequently used countries ahead
+of the rest of the results. Favourites are listed first, in the order you
+provide them, and are separated from the remaining matches by a `Divider`
+whenever both groups contribute to the suggestions:
+
+```dart
+CountryPickerFormField(
+  favorites: const [
+    Iso3166Country.unitedKingdom,
+    Iso3166Country.france,
+  ],
+  decoration: const InputDecoration(labelText: 'Nationality'),
+  onCountryPicked: (country) {},
+)
+```
+
+Favourites are still filtered by the active search query, so a favourite that
+does not match what the user has typed is not shown, and the divider only
+appears while both a favourite and a non-favourite match are present.
+
 ---
 
 ## Testing
@@ -229,6 +252,7 @@ CountryPickerFormField(
 
 - `CountryPickerFormField.countrySearchAnchorKey`: The `SearchAnchor` widget key.
 - `CountryPickerFormField.countrySearchBarKey`: The search entry `TextFormField` key.
+- `CountryPickerFormField.favoritesDividerKey`: The `Divider` separating favourite from remaining suggestions (only present while both groups contribute a suggestion).
 
 In widget tests, you can find and interact with the search bar reliably:
 

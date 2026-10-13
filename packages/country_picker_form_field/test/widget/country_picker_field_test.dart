@@ -24,6 +24,7 @@ void main() {
     required String labelText,
     required void Function(Iso3166Country country) onCountryPicked,
     Iso3166Country? initial,
+    List<Iso3166Country>? favorites,
     String? hintText,
     FocusNode? focusNode,
     GlobalKey<FormState>? formKey,
@@ -51,6 +52,7 @@ void main() {
               ),
               onCountryPicked: onCountryPicked,
               initial: initial,
+              favorites: favorites,
               focusNode: focusNode,
               validator: validator,
               onSaved: onSaved,
@@ -331,6 +333,126 @@ void main() {
       // Saving the form hands the chosen country, not the search text, to onSaved.
       formKey.currentState!.save();
       expect(savedCountry, Iso3166Country.france);
+    });
+  });
+
+  group('CountryPicker favourites', () {
+    /// The countries currently rendered as suggestions, in list order.
+    List<Iso3166Country> suggestionCountries(WidgetTester tester) =>
+        tester.widgetList<NationTile>(find.byType(NationTile)).map((tile) => tile.country).toList();
+
+    testWidgets('lists favourites first, separated from the rest by a divider', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          // Chosen so they are neither alphabetical nor adjacent to the top of
+          // the sorted list, proving they are actually hoisted.
+          favorites: const [Iso3166Country.zimbabwe, Iso3166Country.brazil],
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(CountryPickerFormField.countrySearchBarKey));
+      await tester.pumpAndSettle();
+
+      final countries = suggestionCountries(tester);
+      // Favourites appear first, in the order the caller supplied them.
+      expect(countries.take(2).toList(), [Iso3166Country.zimbabwe, Iso3166Country.brazil]);
+      expect(countries.length, greaterThan(2));
+
+      // A single divider sits between the favourite and remaining groups.
+      final dividerFinder = find.byKey(CountryPickerFormField.favoritesDividerKey);
+      expect(dividerFinder, findsOneWidget);
+      final dividerY = tester.getTopLeft(dividerFinder).dy;
+      final lastFavoriteY = tester.getTopLeft(
+        find.byKey(Key('countryPicker_country_${Iso3166Country.brazil.alpha2}')),
+      ).dy;
+      final firstOtherY = tester.getTopLeft(
+        find.byKey(Key('countryPicker_country_${countries[2].alpha2}')),
+      ).dy;
+      expect(dividerY, greaterThan(lastFavoriteY));
+      expect(dividerY, lessThan(firstOtherY));
+    });
+
+    testWidgets('omits the divider when only favourites match the query', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          favorites: const [Iso3166Country.zimbabwe],
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(CountryPickerFormField.countrySearchBarKey));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'Zimbabwe');
+      await tester.pumpAndSettle();
+
+      expect(suggestionCountries(tester), [Iso3166Country.zimbabwe]);
+      expect(find.byKey(CountryPickerFormField.favoritesDividerKey), findsNothing);
+    });
+
+    testWidgets('hides favourites that do not match the current query', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          favorites: const [Iso3166Country.japan],
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(CountryPickerFormField.countrySearchBarKey));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'France');
+      await tester.pumpAndSettle();
+
+      final countries = suggestionCountries(tester);
+      expect(countries, contains(Iso3166Country.france));
+      expect(countries, isNot(contains(Iso3166Country.japan)));
+    });
+
+    testWidgets('selecting a favourite reports it via onCountryPicked', (tester) async {
+      Iso3166Country? selected;
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          favorites: const [Iso3166Country.newZealand],
+          onCountryPicked: (country) => selected = country,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(CountryPickerFormField.countrySearchBarKey));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(Key('countryPicker_country_${Iso3166Country.newZealand.alpha2}')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(selected, Iso3166Country.newZealand);
+      expect(find.text('New Zealand'), findsOneWidget);
+    });
+
+    testWidgets('shows no divider when no favourites are configured', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(CountryPickerFormField.countrySearchBarKey));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'France');
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NationTile), findsWidgets);
+      expect(find.byKey(CountryPickerFormField.favoritesDividerKey), findsNothing);
     });
   });
 }

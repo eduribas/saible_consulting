@@ -1,6 +1,6 @@
 name: date_picker_form_field
 description: "Locale-aware date form field with a calendar picker and typed manual entry in the local date format"
-version: 1.0.3
+version: 1.0.4
 repository: https://github.com/saible-app/saible_consulting
 issue_tracker: https://github.com/saible-app/saible_consulting/issues
 
@@ -22,7 +22,7 @@ dependencies:
   intl: ^0.20.3
   material_ui: ^1.6.0
   provider: ^6.1.5+1
-  saible_consulting_core: ^1.0.3
+  saible_consulting_core: ^1.0.4
 
 dev_dependencies:
   flutter_lints: ^6.0.0
