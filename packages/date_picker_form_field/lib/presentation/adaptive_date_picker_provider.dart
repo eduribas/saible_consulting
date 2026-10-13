@@ -15,8 +15,15 @@
 import 'package:date_picker_form_field/presentation/adaptive_cupertino_date_picker.dart';
 import 'package:date_picker_form_field/presentation/adaptive_date_picker.dart';
 import 'package:date_picker_form_field/presentation/adaptive_material_date_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+
+@visibleForTesting
+/// Allow tests to simulate a web browser
+bool? debugIsWebOverride;
+
+bool get _isWeb => debugIsWebOverride ?? kIsWeb;
 
 /// Provides an adaptive date picker depending on the widget platform
 class const AdaptiveDatePickerProvider({
@@ -39,8 +46,9 @@ class const AdaptiveDatePickerProvider({
   Widget build(BuildContext context) {
     final platform = Theme.of(context).platform;
     return Provider<AdaptiveDatePicker>.value(
-      value: datePicker ?? switch (platform) {
-        TargetPlatform.iOS || TargetPlatform.macOS => AdaptiveCupertinoDatePicker(),
+      value: datePicker ?? switch ((platform, _isWeb)) {
+        (_, true) => AdaptiveMaterialDatePicker(),
+        (TargetPlatform.iOS || TargetPlatform.macOS, _) => AdaptiveCupertinoDatePicker(),
         _ => AdaptiveMaterialDatePicker(),
       },
       child: child,

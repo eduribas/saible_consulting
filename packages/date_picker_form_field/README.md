@@ -29,6 +29,7 @@ An accessible, locale-adaptive date input field for Flutter that bridges keyboar
   - Purpose-built editing logic handles typing, digit insertions, and backspacing across separators gracefully: backspacing over a separator removes the preceding digit cleanly without breaking cursor placement or trapping user focus.
 - **Adaptive Platform Date Picking (`AdaptiveDatePickerProvider`)**:
   - Automatically chooses the native design idiom for the current platform: Cupertino date picker in a modal popup on iOS and macOS, and Material `DatePickerDialog` on Android and desktop platforms.
+  - On the web the Material `DatePickerDialog` is always used, regardless of the underlying operating system, so a browser running on a Mac receives the Material picker rather than the Cupertino modal popup.
   - Pluggable layer of indirection: inject a custom `datePicker` directly into `DatePickerFormField` or provide an `AdaptiveDatePickerProvider` higher in the widget tree.
 - **Unified Dual-Mode Workflow**:
   - Users can either type digits directly (with or without separators) or tap the calendar icon to select from the platform picker.
@@ -46,7 +47,7 @@ An accessible, locale-adaptive date input field for Flutter that bridges keyboar
 
 - **Locale-Aware Formatting**: Dynamically formats date components based on the user's regional preferences.
 - **Typed Separator Entry**: Direct keyboard typing of date separators (`/`, `.`, `-`) with instant feedback and auto-padding for single digits.
-- **Adaptive Platform Picking**: Seamless Cupertino picker on iOS/macOS and Material date picker dialog on Android/desktop, plus support for custom `AdaptiveDatePickerProvider`s.
+- **Adaptive Platform Picking**: Seamless Cupertino picker on iOS/macOS and Material date picker dialog on Android/desktop/web, plus support for custom `AdaptiveDatePickerProvider`s.
 - **Dual Input Modes**: Fluid keyboard entry alongside standard graphical calendar picking.
 - **Strict Range Clamping**: Enforces configurable `firstDate` and `lastDate` boundaries.
 - **Clean Event Lifecycle**: Dedicated callbacks for `onDateChanged`, `onPickDate`, `onEditText`, `onFieldSubmitted`, and `onEditingComplete`.
@@ -60,7 +61,7 @@ Add `date_picker_form_field` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  date_picker_form_field: ^1.0.2
+  date_picker_form_field: ^1.0.3
 ```
 
 > **UI library:** this package is built on `material_ui`, the official Flutter
@@ -199,7 +200,7 @@ TextFormField(
 
 ### Adaptive Date Picker & Custom Implementation
 
-By default, `DatePickerFormField` automatically adapts to the host platform, displaying a Cupertino date picker in a modal popup on iOS and macOS, and a Material date picker dialog on Android, Linux, and Windows.
+By default, `DatePickerFormField` automatically adapts to the host platform, displaying a Cupertino date picker in a modal popup on iOS and macOS, and a Material date picker dialog on Android, Linux, and Windows. On the web the Material date picker dialog is always used - even when the host operating system reports macOS or iOS (for example a browser running on a Mac) - because the Cupertino modal popup is not appropriate in a browser.
 
 To override the platform default or plug in a custom date picker implementation, supply a custom `AdaptiveDatePicker` via `datePicker`:
 

@@ -1,3 +1,7 @@
+## 1.0.3
+
+* Bumped version to `1.0.3` across the Saible Consulting package suite.
+
 ## 1.0.2
 
 * Added `DateOperations.addMonths`, a timezone-safe month adder that keeps the
