@@ -1,3 +1,11 @@
+## 1.0.3
+
+* `AdaptiveDatePickerProvider` now uses the Material `DatePickerDialog` on the
+  web, even when the host platform reports `macOS` or `iOS` (for example a
+  browser running on a Mac), instead of the Cupertino modal popup.
+* Bumped version to `1.0.3` across the Saible Consulting package suite.
+* Bumped `saible_consulting_core` dependency constraint to `^1.0.3`.
+
 ## 1.0.2
 
 * Bumped version to `1.0.2` across the Saible Consulting package suite.

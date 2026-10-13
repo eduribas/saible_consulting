@@ -29,7 +29,7 @@ The application presents a user registration form implementing clean architectur
 
 1. **Date of Birth (`DatePickerFormField`)**:
    - Supports keyboard input formatted to the active locale (`DD/MM/YYYY`, `MM/DD/YYYY`, or `YYYY-MM-DD`) with immediate typed separator entry (`/`, `.`, `-`) and automatic single-digit padding.
-   - Adaptive platform calendar popup (Material `DatePickerDialog` on Android/desktop, Cupertino modal date picker on iOS/macOS).
+   - Adaptive platform calendar popup (Material `DatePickerDialog` on Android/desktop/web, Cupertino modal date picker on iOS/macOS).
    - Comprehensive validation checks: required, invalid date, date before minimum boundary (1900-01-01), and underage restriction (minimum age 18).
 2. **Nationality (`CountryPickerFormField`)**:
    - Searchable country dropdown covering 249 ISO 3166-1 countries.

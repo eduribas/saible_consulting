@@ -967,6 +967,30 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    testWidgets('uses MaterialDatePickerProvider (DatePickerDialog) on web even when the host platform is macOS', (tester) async {
+      // A browser running on a Mac still reports TargetPlatform.macOS, but the
+      // Material picker is the correct choice on the web, so web detection must
+      // take precedence over the host platform.
+      debugIsWebOverride = true;
+      addTearDown(() => debugIsWebOverride = null);
+
+      await pumpDatePicker(
+        tester,
+        platform: TargetPlatform.macOS,
+        initialDate: DateTime(1999, 10, 31),
+      );
+
+      await tester.tap(find.byKey(DatePickerFormField.launchDatePickerKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DatePickerDialog), findsOneWidget);
+      expect(find.byType(CupertinoDatePicker), findsNothing);
+
+      final cancelButton = find.byType(TextButton).first;
+      await tester.tap(cancelButton);
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('selecting date in Cupertino mode updates field text and invokes callbacks', (tester) async {
       DateTime? pickedDate;
       DateInputValue? changedDate;
