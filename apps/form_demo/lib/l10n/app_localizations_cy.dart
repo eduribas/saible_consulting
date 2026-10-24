@@ -42,6 +42,12 @@ class AppLocalizationsCy extends AppLocalizations {
   String get nationalityLabel => 'Cenedligrwydd';
 
   @override
+  String get countryOfResidenceErrorRequired => 'Mae angen eich gwlad breswyl.';
+
+  @override
+  String get countryOfResidenceLabel => 'Gwlad Breswyl';
+
+  @override
   String get phoneNumberErrorRequired => 'Mae angen eich rhif ffôn.';
 
   @override
@@ -61,6 +67,9 @@ class AppLocalizationsCy extends AppLocalizations {
 
   @override
   String get nationalityPrefix => 'Cenedligrwydd';
+
+  @override
+  String get countryOfResidencePrefix => 'Gwlad Breswyl';
 
   @override
   String get phonePrefix => 'Ffôn';

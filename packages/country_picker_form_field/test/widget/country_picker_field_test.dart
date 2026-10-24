@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'package:country_picker_form_field/application/country_picker_mode.dart';
 import 'package:country_picker_form_field/presentation/country_picker_form_field.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -30,6 +31,10 @@ void main() {
     GlobalKey<FormState>? formKey,
     String? Function(Iso3166Country? country)? validator,
     void Function(Iso3166Country? country)? onSaved,
+    CountryPickerMode mode = CountryPickerMode.searchAnchor,
+    List<Iso3166Country>? include,
+    List<Iso3166Country>? exclude,
+    bool Function(Iso3166Country)? filter,
   }) {
     final saibleLoc = lookupCountryLocalizations(locale);
     return MaterialApp(
@@ -46,6 +51,7 @@ void main() {
           child: Form(
             key: formKey,
             child: CountryPickerFormField(
+              mode: mode,
               decoration: InputDecoration(
                 labelText: labelText,
                 hintText: hintText,
@@ -56,6 +62,9 @@ void main() {
               focusNode: focusNode,
               validator: validator,
               onSaved: onSaved,
+              include: include,
+              exclude: exclude,
+              filter: filter,
             ),
           ),
         ),
@@ -453,6 +462,532 @@ void main() {
 
       expect(find.byType(NationTile), findsWidgets);
       expect(find.byKey(CountryPickerFormField.favoritesDividerKey), findsNothing);
+    });
+  });
+
+  group('CountryPicker dropdown', () {
+    /// The `DropdownMenu` currently rendered by the field.
+    DropdownMenu<Iso3166Country> dropdownMenu(WidgetTester tester) =>
+        tester.widget<DropdownMenu<Iso3166Country>>(find.byType(DropdownMenu<Iso3166Country>));
+
+    /// The countries the `filterCallback` keeps for [query], in ranked order.
+    List<Iso3166Country> filteredCountries(WidgetTester tester, String query) {
+      final menu = dropdownMenu(tester);
+      return menu.filterCallback!(menu.dropdownMenuEntries, query).map((entry) => entry.value).toList();
+    }
+
+    testWidgets('renders a DropdownMenu instead of a search anchor', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DropdownMenu<Iso3166Country>), findsOneWidget);
+      expect(find.byType(SearchAnchor), findsNothing);
+      expect(find.byType(FlagIcon), findsWidgets);
+    });
+
+    testWidgets('shows the initial country', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          initial: Iso3166Country.france,
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, 'France');
+    });
+
+    testWidgets('maps the decoration label, hint and error height onto the field', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country of Residence',
+          hintText: 'Select country',
+          mode: CountryPickerMode.dropdown,
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final decoration = tester.widget<TextField>(find.byType(TextField)).decoration!;
+      expect(decoration.labelText, 'Country of Residence');
+      expect(decoration.hintText, 'Select country');
+      expect(decoration.errorMaxLines, 2);
+      // No suffixIcon was supplied, so the DropdownMenu contributes its own arrow.
+      expect(find.byIcon(Icons.arrow_drop_down), findsWidgets);
+    });
+
+    testWidgets('a caller-supplied suffixIcon replaces the drop-down arrow', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(splashFactory: InkRipple.splashFactory),
+          localizationsDelegates: SaibleLocalizations.localizationsDelegates,
+          home: Scaffold(
+            body: Center(
+              child: CountryPickerFormField(
+                mode: CountryPickerMode.dropdown,
+                decoration: const InputDecoration(
+                  labelText: 'Country',
+                  suffixIcon: Icon(Icons.flag, key: Key('custom_suffix')),
+                ),
+                onCountryPicked: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('custom_suffix')), findsWidgets);
+      expect(find.byIcon(Icons.arrow_drop_down), findsNothing);
+    });
+
+    testWidgets('lists favourites first, trailing the last one with a divider', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          // Chosen so they are neither alphabetical nor adjacent to the top of
+          // the sorted list, proving they are actually hoisted.
+          favorites: const [Iso3166Country.zimbabwe, Iso3166Country.brazil],
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final entries = dropdownMenu(tester).dropdownMenuEntries;
+      expect(entries.take(2).map((entry) => entry.value).toList(), [
+        Iso3166Country.zimbabwe,
+        Iso3166Country.brazil,
+      ]);
+      // Only the final favourite is trailed by the divider.
+      expect(entries[1].labelWidget, isNotNull);
+      expect(entries.where((entry) => entry.labelWidget != null), hasLength(1));
+      // The divider is actually laid out across the menu entry (which is at least
+      // 112 wide), rather than collapsing to its intrinsic width.
+      final divider = find.byKey(CountryPickerFormField.favoritesDividerKey).first;
+      expect(tester.getSize(divider).width, greaterThan(100));
+      expect(tester.getSize(divider).height, greaterThan(0));
+    });
+
+    testWidgets('shows the plain list when there are no favourites', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(dropdownMenu(tester).dropdownMenuEntries.every((entry) => entry.labelWidget == null), isTrue);
+      expect(find.byKey(CountryPickerFormField.favoritesDividerKey), findsNothing);
+    });
+
+    testWidgets('shows the plain list when every country is a favourite', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          favorites: Iso3166Country.values,
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(dropdownMenu(tester).dropdownMenuEntries.every((entry) => entry.labelWidget == null), isTrue);
+      expect(find.byKey(CountryPickerFormField.favoritesDividerKey), findsNothing);
+    });
+
+    testWidgets('keeps the divider beside the last favourite while filtering', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          // Only Zimbabwe matches the query below, so a divider fixed to the last
+          // configured favourite (France) would disappear while filtering.
+          favorites: const [Iso3166Country.zimbabwe, Iso3166Country.france],
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final filtered = dropdownMenu(tester).filterCallback!(
+        const <DropdownMenuEntry<Iso3166Country>>[],
+        'Zimb',
+      );
+      expect(filtered.first.value, Iso3166Country.zimbabwe);
+      expect(filtered.first.labelWidget, isNotNull);
+      // A non-favourite matches too, so the divider is warranted.
+      expect(filtered.map((entry) => entry.value), contains(Iso3166Country.zambia));
+      expect(filtered.where((entry) => entry.labelWidget != null), hasLength(1));
+    });
+
+    testWidgets('filterCallback keeps every entry for an empty filter', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        filteredCountries(tester, ''),
+        hasLength(dropdownMenu(tester).dropdownMenuEntries.length),
+      );
+    });
+    testWidgets('filterCallback matches typo-tolerantly and ranks the best match first', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(filteredCountries(tester, 'germny').first, Iso3166Country.germany);
+    });
+
+    testWidgets('filterCallback matches ISO codes', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(filteredCountries(tester, 'DE').first, Iso3166Country.germany);
+      expect(filteredCountries(tester, 'DEU').first, Iso3166Country.germany);
+    });
+
+    testWidgets('filterCallback returns nothing when no country matches', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(filteredCountries(tester, 'zzzzzzzz'), isEmpty);
+    });
+
+    testWidgets('filterCallback hoists favourites ahead of better-scoring matches', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          favorites: const [Iso3166Country.unitedArabEmirates],
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final matches = filteredCountries(tester, 'united');
+      expect(matches, contains(Iso3166Country.unitedKingdom));
+      expect(matches, contains(Iso3166Country.unitedStates));
+      expect(matches.first, Iso3166Country.unitedArabEmirates);
+    });
+
+    testWidgets('selecting an entry reports it via onCountryPicked', (tester) async {
+      // No focusNode is supplied: the field is still typeable because the
+      // DropdownMenu sets requestFocusOnTap, which is what makes filtering
+      // reachable on platforms that would otherwise leave the field read-only.
+      Iso3166Country? selected;
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          onCountryPicked: (country) => selected = country,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'germny');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(MenuItemButton, 'Germany').last);
+      await tester.pumpAndSettle();
+
+      expect(selected, Iso3166Country.germany);
+      expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, 'Germany');
+    });
+
+    testWidgets('validator and onSaved integrate with the enclosing Form', (tester) async {
+      final formKey = GlobalKey<FormState>();
+      Iso3166Country? savedCountry;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Nationality',
+          mode: CountryPickerMode.dropdown,
+          formKey: formKey,
+          onCountryPicked: (_) {},
+          validator: (country) => country == null ? 'Select a country' : null,
+          onSaved: (country) => savedCountry = country,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Nothing selected yet, so the validator rejects the field and the
+      // message is surfaced through the DropdownMenu's error text.
+      expect(formKey.currentState!.validate(), isFalse);
+      await tester.pumpAndSettle();
+      expect(find.text('Select a country'), findsOneWidget);
+
+      // Pick Germany from the fuzzy-filtered menu.
+      await tester.enterText(find.byType(TextField), 'germny');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(MenuItemButton, 'Germany').last);
+      await tester.pumpAndSettle();
+
+      expect(formKey.currentState!.validate(), isTrue);
+      await tester.pumpAndSettle();
+      expect(find.text('Select a country'), findsNothing);
+
+      // Saving the form hands the chosen country, not the search text, to onSaved.
+      formKey.currentState!.save();
+      expect(savedCountry, Iso3166Country.germany);
+    });
+  });
+
+  group('CountryPicker include, exclude and filter', () {
+    /// The countries the dropdown offers, in menu order.
+    List<Iso3166Country> dropdownCountries(WidgetTester tester) => tester
+        .widget<DropdownMenu<Iso3166Country>>(find.byType(DropdownMenu<Iso3166Country>))
+        .dropdownMenuEntries
+        .map((entry) => entry.value)
+        .toList();
+
+    /// The countries the suggestions view currently offers, in list order.
+    List<Iso3166Country> suggestionCountries(WidgetTester tester) =>
+        tester.widgetList<NationTile>(find.byType(NationTile)).map((tile) => tile.country).toList();
+
+    /// Opens the suggestions view of a search-anchor field.
+    Future<void> openSuggestions(WidgetTester tester) async {
+      await tester.tap(find.byKey(CountryPickerFormField.countrySearchBarKey));
+      await tester.pumpAndSettle();
+    }
+
+    /// Types [query] into the already open suggestions view.
+    Future<void> enterQuery(WidgetTester tester, String query) async {
+      await tester.enterText(find.byType(TextField).last, query);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('include offers only the included countries, in localized order', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          // Deliberately reversed, to show the caller's order is not preserved.
+          include: const [Iso3166Country.germany, Iso3166Country.france],
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(dropdownCountries(tester), [Iso3166Country.france, Iso3166Country.germany]);
+    });
+
+    testWidgets('include restricts the suggestions view to the included countries', (tester) async {
+      const included = [Iso3166Country.france, Iso3166Country.germany];
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          include: included,
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await openSuggestions(tester);
+
+      // The unfiltered suggestions are exactly the included countries.
+      expect(suggestionCountries(tester), included);
+
+      // An included country stays searchable...
+      await enterQuery(tester, 'France');
+      expect(suggestionCountries(tester), contains(Iso3166Country.france));
+
+      // ...while a country left out of include is unreachable, even by name.
+      await enterQuery(tester, 'Finland');
+      expect(suggestionCountries(tester), isNot(contains(Iso3166Country.finland)));
+      expect(suggestionCountries(tester), everyElement(isIn(included)));
+    });
+
+    testWidgets('an empty include list offers nothing', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          include: const <Iso3166Country>[],
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(dropdownCountries(tester), isEmpty);
+    });
+
+    testWidgets('exclude omits the excluded countries', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          exclude: const [Iso3166Country.france, Iso3166Country.germany],
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final countries = dropdownCountries(tester);
+      expect(countries, isNot(contains(Iso3166Country.france)));
+      expect(countries, isNot(contains(Iso3166Country.germany)));
+      expect(countries, contains(Iso3166Country.finland));
+      expect(countries, hasLength(Iso3166Country.values.length - 2));
+    });
+
+    testWidgets('exclude removes a country from the suggestions view', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          exclude: const [Iso3166Country.finland],
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await openSuggestions(tester);
+
+      // Countries that remain offered are still searchable...
+      await enterQuery(tester, 'Fiji');
+      expect(suggestionCountries(tester), contains(Iso3166Country.fiji));
+
+      // ...while the excluded one cannot be reached, even by its exact name.
+      await enterQuery(tester, 'Finland');
+      expect(suggestionCountries(tester), isNot(contains(Iso3166Country.finland)));
+    });
+
+    testWidgets('filter restricts the dropdown entries', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          filter: (country) => country != Iso3166Country.france,
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final countries = dropdownCountries(tester);
+      expect(countries, isNot(contains(Iso3166Country.france)));
+      expect(countries, contains(Iso3166Country.germany));
+      expect(countries, hasLength(Iso3166Country.values.length - 1));
+    });
+
+    testWidgets('filter restricts the suggestions view', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          // A dynamic filter: only countries whose alpha-2 code starts with 'F'.
+          filter: (country) => country.alpha2.startsWith('F'),
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await openSuggestions(tester);
+      await enterQuery(tester, 'France');
+      expect(suggestionCountries(tester), contains(Iso3166Country.france));
+
+      await enterQuery(tester, 'Germany');
+      expect(suggestionCountries(tester), isNot(contains(Iso3166Country.germany)));
+
+      // No suggestion slips past the filter, whatever the query.
+      await enterQuery(tester, 'a');
+      final suggestions = suggestionCountries(tester);
+      expect(suggestions, isNotEmpty);
+      expect(suggestions.every((country) => country.alpha2.startsWith('F')), isTrue);
+    });
+    testWidgets('filter is re-evaluated whenever the field rebuilds', (tester) async {
+      Widget build(bool allowFrance) => buildTestWidget(
+        labelText: 'Country',
+        mode: CountryPickerMode.dropdown,
+        filter: (country) => allowFrance || country != Iso3166Country.france,
+        onCountryPicked: (_) {},
+      );
+
+      await tester.pumpWidget(build(true));
+      await tester.pumpAndSettle();
+      expect(dropdownCountries(tester), contains(Iso3166Country.france));
+
+      await tester.pumpWidget(build(false));
+      await tester.pumpAndSettle();
+      expect(dropdownCountries(tester), isNot(contains(Iso3166Country.france)));
+    });
+
+    test('include, exclude and filter cannot be combined', () {
+      // At most one of the three may be supplied, enforced by an assertion on the
+      // field's constructor.
+      expect(
+        () => CountryPickerFormField(
+          include: const [Iso3166Country.france],
+          exclude: const [Iso3166Country.germany],
+          onCountryPicked: (_) {},
+        ),
+        throwsAssertionError,
+      );
+      expect(
+        () => CountryPickerFormField(
+          include: const [Iso3166Country.france],
+          filter: (country) => country != Iso3166Country.germany,
+          onCountryPicked: (_) {},
+        ),
+        throwsAssertionError,
+      );
+      expect(
+        () => CountryPickerFormField(
+          exclude: const [Iso3166Country.france],
+          filter: (country) => country != Iso3166Country.germany,
+          onCountryPicked: (_) {},
+        ),
+        throwsAssertionError,
+      );
+    });
+
+    testWidgets('ignores favourites that are not offered', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Country',
+          mode: CountryPickerMode.dropdown,
+          include: const [Iso3166Country.france, Iso3166Country.germany, Iso3166Country.zimbabwe],
+          // Brazil is not in the offered list, so it is silently dropped.
+          favorites: const [Iso3166Country.brazil, Iso3166Country.zimbabwe],
+          onCountryPicked: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(dropdownCountries(tester), [
+        Iso3166Country.zimbabwe,
+        Iso3166Country.france,
+        Iso3166Country.germany,
+      ]);
+      expect(find.byKey(CountryPickerFormField.favoritesDividerKey), findsWidgets);
     });
   });
 }

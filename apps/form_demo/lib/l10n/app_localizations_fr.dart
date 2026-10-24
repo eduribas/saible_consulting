@@ -42,6 +42,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nationalityLabel => 'Nationalité';
 
   @override
+  String get countryOfResidenceErrorRequired => 'Votre pays de résidence est obligatoire.';
+
+  @override
+  String get countryOfResidenceLabel => 'Pays de résidence';
+
+  @override
   String get phoneNumberErrorRequired => 'Votre numéro de téléphone est obligatoire.';
 
   @override
@@ -61,6 +67,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get nationalityPrefix => 'Nationalité';
+
+  @override
+  String get countryOfResidencePrefix => 'Pays de résidence';
 
   @override
   String get phonePrefix => 'Téléphone';

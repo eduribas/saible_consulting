@@ -21,9 +21,9 @@ An accessible, high-performance country picker form field for Flutter applicatio
 
 ## Key Architectural Strengths
 
-- **Modern Material 3 `SearchAnchor` Architecture**:
-  - Leverages Flutter's native `SearchAnchor` and `TextFormField` interaction model rather than cumbersome modal sheets, full-page navigators, or custom overlay hacks.
-  - Automatically adapts its display presentation to the current screen size and input modality (touch, mouse, keyboard).
+- **Two Presentation Modes**:
+  - `CountryPickerMode.searchAnchor` (the default) leverages Flutter's native `SearchAnchor` and `TextFormField` interaction model rather than cumbersome modal sheets, full-page navigators, or custom overlay hacks, and adapts its presentation to the current screen size and input modality (touch, mouse, keyboard).
+  - `CountryPickerMode.dropdown` presents the same list inline in a Material 3 `DropdownMenu`, for layouts with more room or shorter country lists.
 - **Fast, Typo-Tolerant Search Engine**:
   - Backed by an in-memory Jaro-Winkler fuzzy search engine with length-bound early rejection.
   - Users can search naturally by localized country name, ISO 3166-1 alpha-2 code, alpha-3 code, or colloquial alternative names.
@@ -46,6 +46,8 @@ An accessible, high-performance country picker form field for Flutter applicatio
 - **First-Class Form Integration**: Seamlessly works with `Form` through typed `validator` and `onSaved` callbacks that receive the selected `Iso3166Country`, plus `InputDecoration`, `onCountryPicked`, `Formz`, and state management solutions (BLoC, Riverpod, Provider).
 - **Flag Badge Affordance**: Displays clean suffix/prefix flag emojis for the active selection.
 - **Favourites First**: Supply an optional `favorites` list to pin frequently used countries to the top of the suggestions, separated from the rest by a divider.
+- **Two Presentation Modes**: Open the picker as a full search view (`CountryPickerMode.searchAnchor`) or inline as a dropdown (`CountryPickerMode.dropdown`); both use the same fuzzy search, relevance ranking and favourites.
+- **Scoped Country Lists**: Restrict the countries on offer with `include`, `exclude`, or a dynamic `filter` predicate, applied to browsing and searching alike.
 
 ---
 
@@ -55,8 +57,8 @@ Add `country_picker_form_field` and [`saible_consulting_core`](https://pub.dev/p
 
 ```yaml
 dependencies:
-  country_picker_form_field: ^1.0.4
-  saible_consulting_core: ^1.0.4
+  country_picker_form_field: ^1.0.5
+  saible_consulting_core: ^1.0.5
 ```
 
 > **UI library:** this package is built on `material_ui`, the official Flutter
@@ -159,6 +161,72 @@ class _NationalityFieldExampleState extends State<NationalityFieldExample> {
 }
 ```
 
+### Picker Modes
+
+`mode` selects how the country list is presented. The default,
+`CountryPickerMode.searchAnchor`, opens a full search view when the field is
+tapped:
+
+```dart
+CountryPickerFormField(
+  mode: CountryPickerMode.searchAnchor, // the default
+  decoration: const InputDecoration(labelText: 'Nationality'),
+  onCountryPicked: (country) {},
+)
+```
+
+`CountryPickerMode.dropdown` presents the same list inline in a Material 3
+`DropdownMenu`, which suits wider layouts or shorter lists. Filtering, relevance
+ranking and favourites behave identically in both modes, and `validator` and
+`onSaved` integrate with the enclosing `Form` either way:
+
+```dart
+CountryPickerFormField(
+  mode: CountryPickerMode.dropdown,
+  decoration: const InputDecoration(labelText: 'Nationality'),
+  onCountryPicked: (country) {},
+)
+```
+
+### Restricting the Country List
+
+Offer only a subset of countries with `include`, drop some with `exclude`, or
+apply a dynamic `filter` predicate that is evaluated on every build:
+
+```dart
+// Opt in, e.g. to the UK crown dependencies
+CountryPickerFormField(
+  include: const [
+    Iso3166Country.unitedKingdom,
+    Iso3166Country.jersey,
+    Iso3166Country.guernsey,
+    Iso3166Country.isleOfMan,
+  ],
+  decoration: const InputDecoration(labelText: 'Country of Residence'),
+  onCountryPicked: (country) {},
+)
+
+// Opt out of the countries you cannot serve
+CountryPickerFormField(
+  exclude: const [Iso3166Country.unitedKingdom],
+  decoration: const InputDecoration(labelText: 'Nationality'),
+  onCountryPicked: (country) {},
+)
+
+// Filter dynamically, e.g. only countries on a +44 dial code
+CountryPickerFormField(
+  filter: (country) => country.phoneCode == 44,
+  decoration: const InputDecoration(labelText: 'Nationality'),
+  onCountryPicked: (country) {},
+)
+```
+
+At most one of `include`, `exclude` and `filter` may be supplied, which is
+enforced by an assertion. The restriction applies to searching as well as
+browsing, so a country that is not on offer cannot be found by name, ISO code or
+alias. `initial` and `favorites` are used exactly as given, so it is up to the
+caller to keep them compatible with the restriction.
+
 ### Form & State Management (e.g. Formz / BLoC)
 
 ```dart
@@ -242,7 +310,9 @@ CountryPickerFormField(
 
 Favourites are still filtered by the active search query, so a favourite that
 does not match what the user has typed is not shown, and the divider only
-appears while both a favourite and a non-favourite match are present.
+appears while both a favourite and a non-favourite match are present. The same
+applies in `CountryPickerMode.dropdown`, where the divider trails the final
+favourite entry in the menu.
 
 ---
 

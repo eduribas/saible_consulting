@@ -44,7 +44,7 @@ Add `saible_consulting_core` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  saible_consulting_core: ^1.0.4
+  saible_consulting_core: ^1.0.5
 ```
 
 Import the package in your Dart code:
@@ -83,7 +83,41 @@ print(country.tr(context)); // 'United Kingdom', 'y Deyrnas Unedig', ...
 print(country.searchTerms(context)); // ['GB', 'GBR', 'United Kingdom', ...]
 ```
 
-### 2. High-Performance Fuzzy Search
+### 2. Restricting the Country List
+
+`CountriesProvider` accepts an optional `include` or `exclude` list to scope the
+countries it publishes, and `Countries.where` applies a dynamic predicate at
+build time. Both re-derive the localized name and dial code search terms for the
+countries that survive, so downstream searches stay consistent with the list:
+
+```dart
+import 'package:saible_consulting_core/saible_consulting_core.dart';
+
+// Opt in to a short list of countries
+CountriesProvider(
+  include: const [Iso3166Country.unitedKingdom, Iso3166Country.ireland],
+  child: myForm,
+)
+
+// Opt out of the countries you cannot serve
+CountriesProvider(
+  exclude: const [Iso3166Country.unitedKingdom],
+  child: myForm,
+)
+
+// Or apply a dynamic predicate while reading the provided data
+final countries = context.watch<Countries>().where(
+  context,
+  (country) => country.phoneCode == 44,
+);
+```
+
+`include` and `exclude` are mutually exclusive, which is enforced by an
+assertion. The form field packages expose all three options directly: `include`
+and `exclude` are forwarded to `CountriesProvider`, while a dynamic `filter`
+predicate is applied with `Countries.where`.
+
+### 3. High-Performance Fuzzy Search
 
 ```dart
 import 'package:saible_consulting_core/application/text_search_item.dart';
@@ -99,7 +133,7 @@ final topMatches = search.fastSearch('britain', limit: 2);
 print(topMatches); // ['United Kingdom']
 ```
 
-### 3. Date Manipulation Extensions
+### 4. Date Manipulation Extensions
 
 ```dart
 import 'package:saible_consulting_core/application/date_utils.dart';
@@ -114,7 +148,7 @@ final dates = [date, nextWeek, nextQuarter, adultDate];
 print(dates.max()); // nextWeek
 ```
 
-### 4. Localization Setup for Widgets
+### 5. Localization Setup for Widgets
 
 Country names resolve synchronously from the ambient `BuildContext`, so there is
 no provider, cache, or lookup call to wire up. Simply add the
@@ -165,7 +199,7 @@ tests safe.
 > supported match (e.g. `pt_BR` → `pt`), so this is only reachable if you call
 > the lookup directly with an unsupported locale.
 
-### 5. Migrating from `package:flutter/material.dart`
+### 6. Migrating from `package:flutter/material.dart`
 
 `material_ui` is the Material library that used to ship inside
 `package:flutter/material.dart`; its bundled data-driven fix rewrites the imports

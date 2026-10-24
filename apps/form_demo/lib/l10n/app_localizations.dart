@@ -156,6 +156,18 @@ abstract class AppLocalizations {
   /// **'Nationality'**
   String get nationalityLabel;
 
+  /// No description provided for @countryOfResidenceErrorRequired.
+  ///
+  /// In en_GB, this message translates to:
+  /// **'Your country of residence is required.'**
+  String get countryOfResidenceErrorRequired;
+
+  /// No description provided for @countryOfResidenceLabel.
+  ///
+  /// In en_GB, this message translates to:
+  /// **'Country of Residence'**
+  String get countryOfResidenceLabel;
+
   /// No description provided for @phoneNumberErrorRequired.
   ///
   /// In en_GB, this message translates to:
@@ -197,6 +209,12 @@ abstract class AppLocalizations {
   /// In en_GB, this message translates to:
   /// **'Nationality'**
   String get nationalityPrefix;
+
+  /// No description provided for @countryOfResidencePrefix.
+  ///
+  /// In en_GB, this message translates to:
+  /// **'Country of Residence'**
+  String get countryOfResidencePrefix;
 
   /// No description provided for @phonePrefix.
   ///

@@ -26,6 +26,7 @@ DateTime _getLast() => DateTime.now().dateOnly().addYears(-18);
 final class const RegistrationFormState._({
   this.dateOfBirth = const DateInputState.pure(first: _getFirst, last: _getLast),
   this.nationality = const CountryInputState.pure(),
+  this.countryOfResidence = const CountryInputState.pure(),
   this.phoneNumber = const PhoneNumberInputState.pure(),
 }) {
   /// The validation and value state for date of birth.
@@ -33,6 +34,9 @@ final class const RegistrationFormState._({
 
   /// The validation and value state for nationality.
   final CountryInputState nationality;
+
+  /// The validation and value state for nationality.
+  final CountryInputState countryOfResidence;
 
   /// The validation and value state for phone number.
   final PhoneNumberInputState phoneNumber;
@@ -46,20 +50,25 @@ final class const RegistrationFormState._({
   /// Whether the nationality input is valid.
   bool get isNationalityValid => nationality.isValid;
 
+  /// Whether the country of residence input is valid.
+  bool get isCountryofResidenceValid => countryOfResidence.isValid;
+
   /// Whether the phone number input is valid.
   bool get isPhoneNumberValid => phoneNumber.isValid;
 
   /// Whether all registration form inputs are valid.
-  bool get isValid => isDateOfBirthValid && isNationalityValid && isPhoneNumberValid;
+  bool get isValid => isDateOfBirthValid && isNationalityValid && isPhoneNumberValid && isCountryofResidenceValid;
 
   /// Returns a copy of this state with the given fields replaced.
   RegistrationFormState copyWith({
     DateInputState? dateOfBirth,
     CountryInputState? nationality,
+    CountryInputState? countryOfResidence,
     PhoneNumberInputState? phoneNumber,
   }) => RegistrationFormState._(
     dateOfBirth: dateOfBirth ?? this.dateOfBirth,
     nationality: nationality ?? this.nationality,
+    countryOfResidence: countryOfResidence ?? this.countryOfResidence,
     phoneNumber: phoneNumber ?? this.phoneNumber,
   );
 }

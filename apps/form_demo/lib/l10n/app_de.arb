@@ -19,6 +19,8 @@
   "dateOfBirthLabel": "Geburtsdatum",
   "nationalityErrorRequired": "Ihre Staatsangehörigkeit ist erforderlich.",
   "nationalityLabel": "Staatsangehörigkeit",
+  "countryOfResidenceErrorRequired": "Ihr Wohnsitzland ist erforderlich.",
+  "countryOfResidenceLabel": "Wohnsitzland",
   "phoneNumberErrorRequired": "Ihre Telefonnummer ist erforderlich.",
   "phoneNumberErrorInvalid": "Eine gültige Telefonnummer ist erforderlich.",
   "phoneNumberLabel": "Telefonnummer",
@@ -26,6 +28,7 @@
   "formValidated": "Formular validiert!",
   "dateOfBirthPrefix": "Geburtsdatum",
   "nationalityPrefix": "Staatsangehörigkeit",
+  "countryOfResidencePrefix": "Wohnsitzland",
   "phonePrefix": "Telefon",
   "languageMenuTooltip": "Sprache"
 }

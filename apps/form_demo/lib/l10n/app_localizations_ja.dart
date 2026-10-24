@@ -41,6 +41,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get nationalityLabel => '国籍';
 
   @override
+  String get countryOfResidenceErrorRequired => '居住国は必須です。';
+
+  @override
+  String get countryOfResidenceLabel => '居住国';
+
+  @override
   String get phoneNumberErrorRequired => '電話番号は必須です。';
 
   @override
@@ -60,6 +66,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get nationalityPrefix => '国籍';
+
+  @override
+  String get countryOfResidencePrefix => '居住国';
 
   @override
   String get phonePrefix => '電話';

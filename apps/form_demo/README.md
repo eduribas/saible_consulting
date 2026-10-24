@@ -35,15 +35,18 @@ The application presents a user registration form implementing clean architectur
    - Searchable country dropdown covering 249 ISO 3166-1 countries.
    - Instant fuzzy search matching country name, ISO-2 / ISO-3 codes, and localized aliases.
    - Flag emoji indicators.
-3. **Phone Number (`PhoneNumberFormField`)**:
+3. **Country of Residence (`CountryPickerFormField`)**:
+   - The same picker in `CountryPickerMode.dropdown`, scoped with `include` to the UK crown dependencies (the United Kingdom, Jersey, Guernsey and the Isle of Man).
+   - A mandatory field whose validity gates the reactive submit button, with its value reported in the submission summary.
+4. **Phone Number (`PhoneNumberFormField`)**:
    - Interactive international dial code prefix selector with search view.
    - As-you-type formatting tailored to the selected country's conventions.
    - E.164 phone validation via Google `libphonenumber` bindings (`dlibphonenumber`).
-4. **Dynamic Language Switcher**:
+5. **Dynamic Language Switcher**:
    - Seamlessly switch between English (UK), French, German, Welsh, English (US), and Japanese on the fly.
    - Fully translates form labels, hint formats, errors, buttons, and country names in real time.
    - Country names draw on the 39-language `CountryLocalizations` catalogue in `saible_consulting_core`, wired up through `SaibleLocalizations.localizationsDelegates` (country strings plus `material_ui`'s Material, Cupertino and Widgets delegates); no locale provider or lookup wiring is needed, as translations resolve directly from the active `BuildContext`.
-5. **State Management & Architecture**:
+6. **State Management & Architecture**:
    - State managed with `flutter_bloc` (`RegistrationFormBloc`) and `formz` (`FormzInput` models for each field).
    - Reactive submit button enabled only when all fields satisfy validation rules.
    - Submitting the form displays a confirmation `SnackBar` summarizing the validated user inputs.

@@ -49,6 +49,15 @@ void main() {
       expect(find.text('Nationality'), findsOneWidget);
       expect(find.byKey(CountryPickerFormField.countrySearchBarKey), findsOneWidget);
 
+      expect(find.text('Country of Residence'), findsWidgets);
+      // The residence field is a dropdown-mode country picker restricted to the
+      // UK crown dependencies, with the United Kingdom as its favourite.
+      expect(
+        tester.widget<DropdownMenu<Iso3166Country>>(find.byType(DropdownMenu<Iso3166Country>))
+            .dropdownMenuEntries.map((entry) => entry.value).toList(),
+        [Iso3166Country.unitedKingdom, Iso3166Country.guernsey, Iso3166Country.isleOfMan, Iso3166Country.jersey],
+      );
+
       expect(find.text('Phone Number'), findsOneWidget);
       expect(find.byKey(PhoneNumberFormField.textInputKey), findsOneWidget);
       expect(find.text('+44'), findsOneWidget);
@@ -118,6 +127,7 @@ void main() {
       expect(find.text("Démo d'inscription"), findsOneWidget);
       expect(find.text('Date de naissance'), findsOneWidget);
       expect(find.text('Nationalité'), findsOneWidget);
+      expect(find.text('Pays de résidence'), findsWidgets);
       expect(find.text('Numéro de téléphone'), findsOneWidget);
       expect(find.widgetWithText(FilledButton, 'Envoyer le formulaire de démo'), findsOneWidget);
 
@@ -215,7 +225,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('France'), findsOneWidget);
-      expect(find.byType(FlagIcon), findsOneWidget);
+      // Assert the selected country's flag specifically: the residence dropdown
+      // renders its entries (and their flag icons) offscreen for width
+      // measurement, so find.byType(FlagIcon) would match those too.
+      expect(find.text(Iso3166Country.france.flagEmoji()), findsOneWidget);
     });
 
     testWidgets('validating phone number shows error messages on invalid input', (tester) async {
@@ -295,11 +308,21 @@ void main() {
       await tester.enterText(find.byKey(PhoneNumberFormField.textInputKey), '02079460123');
       await tester.pumpAndSettle();
 
+      // Submit still disabled: the country of residence is mandatory
+      submitButton = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Submit Demo Form'));
+      expect(submitButton.onPressed, isNull);
+
+      // 4. Select Country of Residence: Jersey, from the dropdown-mode picker
+      await tester.tap(find.byType(DropdownMenu<Iso3166Country>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(MenuItemButton, 'Jersey').last);
+      await tester.pumpAndSettle();
+
       // Submit button is now enabled!
       submitButton = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Submit Demo Form'));
       expect(submitButton.onPressed, isNotNull);
 
-      // 4. Tap submit button
+      // 5. Tap submit button
       await tester.tap(find.widgetWithText(FilledButton, 'Submit Demo Form'));
       await tester.pumpAndSettle();
 
@@ -308,6 +331,7 @@ void main() {
       expect(find.textContaining('Form Validated!'), findsOneWidget);
       expect(find.textContaining('DoB: 15/06/1990'), findsOneWidget);
       expect(find.textContaining('Nationality: United Kingdom'), findsOneWidget);
+      expect(find.textContaining('Country of Residence: Jersey'), findsOneWidget);
       expect(find.textContaining('Phone: +44 20 7946 0123'), findsOneWidget);
     });
   });

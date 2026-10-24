@@ -1,3 +1,8 @@
+## 1.0.5
+
+* Bumped version to `1.0.5` across the Saible Consulting package suite.
+* Bumped `saible_consulting_core` dependency constraint to `^1.0.5`.
+
 ## 1.0.4
 
 * Bumped version to `1.0.4` across the Saible Consulting package suite.
