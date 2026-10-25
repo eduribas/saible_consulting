@@ -51,7 +51,7 @@ class const _FavoritesDividerLabel({required this.label}) extends StatelessWidge
     mainAxisSize: MainAxisSize.min,
     children: [
       Text(label),
-      const Divider(key: CountryPickerFormField.favoritesDividerKey),
+      const Divider(key: CountryPickerFormField.favoritesDividerKey, height: 1),
     ],
   );
 }
