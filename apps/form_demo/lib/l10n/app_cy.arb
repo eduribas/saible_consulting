@@ -19,6 +19,8 @@
   "dateOfBirthLabel": "Dyddiad Geni",
   "nationalityErrorRequired": "Mae angen eich cenedligrwydd.",
   "nationalityLabel": "Cenedligrwydd",
+  "countryOfResidenceErrorRequired": "Mae angen eich gwlad breswyl.",
+  "countryOfResidenceLabel": "Gwlad Breswyl",
   "phoneNumberErrorRequired": "Mae angen eich rhif ffôn.",
   "phoneNumberErrorInvalid": "Mae angen rhif ffôn dilys.",
   "phoneNumberLabel": "Rhif Ffôn",
@@ -26,6 +28,7 @@
   "formValidated": "Ffurflen wedi'i ddilysu!",
   "dateOfBirthPrefix": "Dyddiad Geni",
   "nationalityPrefix": "Cenedligrwydd",
+  "countryOfResidencePrefix": "Gwlad Breswyl",
   "phonePrefix": "Ffôn",
   "languageMenuTooltip": "Iaith"
 }

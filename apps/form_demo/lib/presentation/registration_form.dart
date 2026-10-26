@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import 'package:country_picker_form_field/presentation/country_picker_form_field.dart';
+import 'package:country_picker_form_field/country_picker_form_field.dart';
 import 'package:date_picker_form_field/presentation/date_picker_form_field.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:form_demo/application/country_input_state.dart';
@@ -113,6 +113,43 @@ class const _NationalityField() extends StatelessWidget {
   }
 }
 
+class const _ResidenceField() extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return BlocSelector<RegistrationFormBloc, RegistrationFormState, CountryInputState>(
+      selector: (state) => state.countryOfResidence,
+      builder: (context, countryOfResidence) => ListTile(
+        title: CountryPickerFormField(
+          mode: CountryPickerMode.dropdown,
+          favorites: const [
+            Iso3166Country.unitedKingdom,
+          ],
+          include: const [
+            Iso3166Country.unitedKingdom,
+            Iso3166Country.jersey,
+            Iso3166Country.guernsey,
+            Iso3166Country.isleOfMan,
+          ],
+          decoration: InputDecoration(
+            labelText: l10n.countryOfResidenceLabel,
+            errorText: switch (countryOfResidence.error) {
+              null => null,
+              _ when countryOfResidence.isPure => null,
+              CountryValidationError.empty => l10n.countryOfResidenceErrorRequired,
+            }
+          ),
+          onCountryPicked: (input) {
+            context.read<RegistrationFormBloc>().add(
+              CountryOfResidenceChanged(value: input)
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
 class const _PhoneNumberField() extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -154,6 +191,7 @@ class const _Actions() extends StatelessWidget {
                 '${l10n.formValidated}\n'
                 '${l10n.dateOfBirthPrefix}: ${state.dateOfBirth.value.rawText}\n'
                 '${l10n.nationalityPrefix}: ${state.nationality.value?.tr(context)}\n'
+                '${l10n.countryOfResidencePrefix}: ${state.countryOfResidence.value?.tr(context)}\n'
                 '${l10n.phonePrefix}: ${state.phoneNumber.value.regionCode} ${state.phoneNumber.value.rawText}',
               ),
             ),
@@ -203,6 +241,7 @@ class const _Form() extends StatelessWidget {
         SizedBox(height: 24),
         _DateOfBirthField(),
         _NationalityField(),
+        _ResidenceField(),
         _PhoneNumberField(),
         SizedBox(height: 32),
         _Actions(),

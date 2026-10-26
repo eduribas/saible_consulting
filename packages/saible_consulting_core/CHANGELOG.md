@@ -1,3 +1,14 @@
+## 1.0.5
+
+* Added optional `include` and `exclude` lists to `CountriesProvider`, so the
+  countries offered to a form field can be opted in or out without touching the
+  shared `Iso3166Country` enum. The two are mutually exclusive, enforced by an
+  assertion.
+* Added the `CountryFilterExtension.where` extension on `Countries`, which
+  applies a dynamic predicate at build time and re-derives the localized name
+  and dial code search terms for the countries that survive it.
+* Bumped version to `1.0.5` across the Saible Consulting package suite.
+
 ## 1.0.4
 
 * Bumped version to `1.0.4` across the Saible Consulting package suite.

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'package:country_picker_form_field/application/country_picker_mode.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -34,6 +35,25 @@ class const _DefaultSuffix({
       child: FlagIcon.forIso3166(country: country),
     );
   }
+}
+
+/// The label of the final favourite dropdown entry: the country name with a
+/// [Divider] beneath it, separating the favourites from the remaining countries.
+class const _FavoritesDividerLabel({required this.label}) extends StatelessWidget {
+  /// The country name displayed above the divider.
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    // Stretch, so the divider spans the width of the menu entry rather than
+    // collapsing to its intrinsic (zero) width.
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text(label),
+      const Divider(key: CountryPickerFormField.favoritesDividerKey, height: 1),
+    ],
+  );
 }
 
 /// The suggestions for a country search query, split into favourite and
@@ -100,23 +120,38 @@ class _CountrySearch._(this._favorites, this._others) {
         : const <Iso3166Country>[];
     return _CountrySuggestions(favorites: favorites, others: others);
   }
+
+  /// Matches the prepared terms against [query], listing favourite matches
+  /// first (in the caller's order) and remaining matches afterwards.
+  ///
+  /// Unlike [suggest], no result limit is applied, so this suits the dropdown
+  /// mode where the filtered list *is* the menu rather than a bounded set of
+  /// suggestions.
+  List<Iso3166Country> matches(String query) => [
+    ..._favorites.fastSearch(query),
+    ..._others.fastSearch(query),
+  ];
 }
 
 class const _CountryPicker({
   required this.onCountryPicked,
+  required this.mode,
   this.initial,
   this.favorites,
   this.decoration,
   this.focusNode,
   this.validator,
   this.onSaved,
+  this.filter,
 }) extends StatefulWidget {
   static Key countrySuggestionKey(Iso3166Country country) => Key('countryPicker_country_${country.alpha2}');
   final void Function(Iso3166Country country) onCountryPicked;
+  final CountryPickerMode mode;
   final Iso3166Country? initial;
   final List<Iso3166Country>? favorites;
   final InputDecoration? decoration;
   final FocusNode? focusNode;
+  final bool Function(Iso3166Country)? filter;
   final String? Function(Iso3166Country? country)? validator;
   final void Function(Iso3166Country? country)? onSaved;
 
@@ -163,13 +198,63 @@ class _CountryPickerState() extends State<_CountryPicker> {
 
   @override
   Widget build(BuildContext context) {
+    final filter = widget.filter;
+    final countries = filter == null
+      ? context.watch<Countries>()
+      : context.watch<Countries>().where(context, filter);
     // Prepared once per rebuild (not per keystroke): the search terms are
     // stable for the current locale, so the favourites/remaining split is
-    // computed here rather than on every keystroke.
+    // computed here rather than on every keystroke. Shared by both modes, so
+    // the dropdown filters with exactly the same fuzzy search as the
+    // search-anchor view.
     final search = _CountrySearch(
-      searchTerms: context.watch<Countries>().searchTerms,
+      searchTerms: countries.searchTerms,
       favorites: widget.favorites ?? const <Iso3166Country>[],
     );
+    if (widget.mode == CountryPickerMode.dropdown) {
+      // The caller's favourites, matched by value against the entries. The same
+      // fuzzy search as the search-anchor view lists them ahead of the rest.
+      final favorites = widget.favorites ?? const <Iso3166Country>[];
+      // Every country, favourites first: the order the unfiltered menu shows.
+      final unfiltered = search.matches('');
+      // DropdownMenu is not a FormField, so it is wrapped in one to give the
+      // enclosing Form the typed validator and onSaved callbacks.
+      return FormField<Iso3166Country>(
+        initialValue: chosenCountry,
+        validator: widget.validator,
+        onSaved: widget.onSaved,
+        builder: (field) => DropdownMenu<Iso3166Country>(
+          key: CountryPickerFormField.countrySearchAnchorKey,
+          focusNode: widget.focusNode,
+          initialSelection: chosenCountry,
+          enableFilter: true,
+          // Typing to filter is only reachable on mobile if tapping the field may
+          // focus it and raise the keyboard; desktop already behaves this way.
+          requestFocusOnTap: true,
+          // The caller's decoration is applied to the inner field verbatim, with
+          // the validation error and our default error height layered on top. A
+          // caller-supplied suffixIcon wins; otherwise DropdownMenu contributes
+          // its own drop-down arrow.
+          decorationBuilder: (context, controller) => (widget.decoration ?? const InputDecoration()).copyWith(
+            errorText: field.errorText,
+            errorMaxLines: widget.decoration?.errorMaxLines ?? 2,
+          ),
+          // The entries are rebuilt from the matched countries rather than reused
+          // from the list DropdownMenu hands back, because it re-filters its own
+          // previous results on every rebuild. Rebuilding keeps the favourites
+          // divider beside the last favourite that is actually on screen.
+          filterCallback: (_, filter) => _dropdownEntries(context, search.matches(filter), favorites),
+          onSelected: (country) {
+            if (country == null) return;
+            setState(() { chosenCountry = country; });
+            field.didChange(country);
+            widget.onCountryPicked(country);
+          },
+          dropdownMenuEntries: _dropdownEntries(context, unfiltered, favorites),
+        ),
+      );
+    }
+
     return SearchAnchor(
       key: CountryPickerFormField.countrySearchAnchorKey,
       searchController: controller,
@@ -193,6 +278,37 @@ class _CountryPickerState() extends State<_CountryPicker> {
       },
       suggestionsBuilder: (context, controller) => _suggestions(context, controller, search),
     );
+  }
+
+  /// Builds the dropdown entries for [ordered] countries, which must list the
+  /// caller's [favorites] ahead of the remaining countries.
+  ///
+  /// When both groups are represented, the final favourite is trailed by a
+  /// [Divider] so the two read as separate sections. [DropdownMenu] has no
+  /// separator of its own, so the divider rides along in that entry's
+  /// [DropdownMenuEntry.labelWidget]. When only one group is present the plain
+  /// list is shown.
+  List<DropdownMenuEntry<Iso3166Country>> _dropdownEntries(
+    BuildContext context,
+    List<Iso3166Country> ordered,
+    List<Iso3166Country> favorites,
+  ) {
+    // The favourites are listed first, so the last of them sits just before the
+    // first remaining country, and the divider is warranted only while both
+    // groups are present.
+    final favoriteCount = ordered.where(favorites.contains).length;
+    final dividerAfter = favoriteCount > 0 && favoriteCount < ordered.length ? ordered[favoriteCount - 1] : null;
+    final entries = <DropdownMenuEntry<Iso3166Country>>[];
+    for (final country in ordered) {
+      final label = country.tr(context);
+      entries.add(DropdownMenuEntry(
+        value: country,
+        label: label,
+        leadingIcon: FlagIcon.forIso3166(country: country),
+        labelWidget: country == dividerAfter ? _FavoritesDividerLabel(label: label) : null,
+      ));
+    }
+    return entries;
   }
 
   /// Renders the suggestions for the controller's current query: favourite
@@ -225,7 +341,7 @@ class _CountryPickerState() extends State<_CountryPicker> {
 }
 
 /// A form field widget that allows selecting a country using a searchable view.
-class const CountryPickerFormField({
+class CountryPickerFormField({
   super.key,
   this.decoration,
   required this.onCountryPicked,
@@ -234,6 +350,10 @@ class const CountryPickerFormField({
   this.focusNode,
   this.validator,
   this.onSaved,
+  this.mode = CountryPickerMode.searchAnchor,
+  this.include,
+  this.exclude,
+  this.filter,
 }) extends StatelessWidget {
   /// The [Key] for the country search anchor view.
   static const Key countrySearchAnchorKey = Key('countryPicker_searchAnchor');
@@ -242,23 +362,73 @@ class const CountryPickerFormField({
   static const Key countrySearchBarKey = Key('countryPicker_searchBar');
 
   /// The [Key] for the [Divider] separating favourites from the remaining
-  /// suggestions. Only present while both groups contribute a suggestion.
+  /// countries. Only present while both groups are represented: in the
+  /// suggestions view it divides the two groups of suggestions, and in the
+  /// dropdown it trails the final favourite entry.
   static const Key favoritesDividerKey = Key('countryPicker_favoritesDivider');
 
   /// Creates a [CountryPickerFormField].
-  this;
+  ///
+  /// At most one of [include], [exclude] and [filter] may be supplied, which is
+  /// enforced by an assertion.
+  this {
+    final CountryPickerFormField(:include, :exclude, :filter) = this;
+    assert(
+      <Object?>[include, exclude, filter].where((e) => e != null).length <= 1,
+      'Only one of include, exclude and filter can be used at any one time.',
+    );
+  }
 
-  /// The decoration applied to the underlying [TextFormField].
+  /// The mode in which you want to show the countries.
+  /// 
+  /// Do you want to show them in-place, where the user taps the dropdown ([CountryPickerMode.dropdown]),
+  /// or in a new context, from a SearchAnchor ([CountryPickerMode.searchAnchor])?
+  final CountryPickerMode mode;
+
+  /// An opt-in list of countries to include
+  /// 
+  /// Cannot be used at the same time as [CountryPickerFormField.exclude] or
+  /// [CountryPickerFormField.filter], which is enforced by an assertion.
+  final List<Iso3166Country>? include;
+
+  /// An opt-out list of countries to exclude
+  /// 
+  /// Cannot be used at the same time as [CountryPickerFormField.include] or
+  /// [CountryPickerFormField.filter], which is enforced by an assertion.
+  final List<Iso3166Country>? exclude;
+
+  /// A dynamic filter function that can be applied to restrict the countries to be chosen.
+  ///
+  /// Cannot be used at the same time as [CountryPickerFormField.include] or
+  /// [CountryPickerFormField.exclude], which is enforced by an assertion.
+  /// 
+  /// Use with caution, as this filter will be applied in the build() step, which may be invoked dozens
+  /// of times per second.
+  final bool Function(Iso3166Country)? filter;
+
+  /// The decoration applied to the underlying form field.
   /// 
   /// This offers rich customisation for your form input (e.g. labels, hints, error descriptions).
   /// If you provide a suffix icon, that will override the default suffix icon we have provided,
   /// but that won't break the underlying implementation.
+  ///
+  /// In [CountryPickerMode.searchAnchor] the default suffix icon is the selected
+  /// country's flag (or a globe when nothing is selected). In
+  /// [CountryPickerMode.dropdown] the underlying [DropdownMenu] contributes its
+  /// own drop-down arrow unless you supply a suffix icon.
   final InputDecoration? decoration;
 
   /// Callback invoked when a country is selected.
   final void Function(Iso3166Country country) onCountryPicked;
 
   /// The initially selected country, if any.
+  ///
+  /// This is an explicit selection and is used exactly as given. It is up to the
+  /// caller to keep it compatible with [CountryPickerFormField.include],
+  /// [CountryPickerFormField.exclude] and [CountryPickerFormField.filter]: if it
+  /// names a country that is not on offer, the picker will not offer it.
+  /// [CountryPickerMode.searchAnchor] still shows the given name as the field's
+  /// text, whereas [CountryPickerMode.dropdown] leaves the field empty.
   final Iso3166Country? initial;
 
   /// Countries to surface ahead of the rest of the results in the suggestions
@@ -293,13 +463,19 @@ class const CountryPickerFormField({
   final void Function(Iso3166Country? country)? onSaved;
 
   @override
-  Widget build(BuildContext context) => CountriesProvider(child: _CountryPicker(
-    decoration: decoration, 
-    onCountryPicked: onCountryPicked,
-    initial: initial,
-    favorites: favorites,
-    focusNode: focusNode,
-    validator: validator,
-    onSaved: onSaved,
-  ));
+  Widget build(BuildContext context) => CountriesProvider(
+    include: include,
+    exclude: exclude,
+    child: _CountryPicker(
+      decoration: decoration, 
+      onCountryPicked: onCountryPicked,
+      initial: initial,
+      favorites: favorites,
+      focusNode: focusNode,
+      validator: validator,
+      onSaved: onSaved,
+      filter: filter,
+      mode: mode,
+    )
+  );
 }

@@ -1,3 +1,15 @@
+## 1.0.5
+
+* Added optional `include` and `exclude` lists and a dynamic `filter` predicate
+  to `PhoneNumberFormField`, restricting which countries the dial code picker
+  offers and searches. At most one of the three may be supplied, enforced by an
+  assertion.
+* The implicit default dial code is now resolved to a country that is actually
+  on offer, so the field never starts on a country the picker cannot offer. An
+  explicit `initialValue` is still used exactly as given.
+* Bumped version to `1.0.5` across the Saible Consulting package suite.
+* Bumped `saible_consulting_core` dependency constraint to `^1.0.5`.
+
 ## 1.0.4
 
 * Bumped version to `1.0.4` across the Saible Consulting package suite.

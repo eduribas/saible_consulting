@@ -1,3 +1,25 @@
+## 1.0.5
+
+* Added `CountryPickerMode`, allowing the picker to open either as a search view
+  (`CountryPickerMode.searchAnchor`, the default) or inline as a dropdown
+  (`CountryPickerMode.dropdown`). `CountryPickerMode` is exported from the
+  package's public library.
+* The dropdown mode ranks matches with the same Jaro-Winkler search as the
+  suggestions view, hoists `favorites` and trails the final favourite with a
+  `Divider`, and is wrapped in a `FormField` so an enclosing `Form` drives
+  `validator` and `onSaved` with the chosen `Iso3166Country`.
+* Added optional `include` and `exclude` lists and a dynamic `filter` predicate
+  to `CountryPickerFormField`, restricting which countries are offered and
+  searchable. At most one of the three may be supplied, enforced by an
+  assertion.
+* `CountryPickerFormField.initial` is now used exactly as given, leaving it to
+  the caller to keep it compatible with `include`, `exclude` and `filter`.
+* The dropdown mode maps `decoration` onto its inner field, requests focus on
+  tap so that typing to filter works on mobile, and shows the first offered
+  country when the implicit default is not available.
+* Bumped version to `1.0.5` across the Saible Consulting package suite.
+* Bumped `saible_consulting_core` dependency constraint to `^1.0.5`.
+
 ## 1.0.4
 
 * Added an optional `favorites` field (`List<Iso3166Country>`) to

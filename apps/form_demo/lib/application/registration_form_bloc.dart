@@ -35,6 +35,12 @@ class RegistrationFormBloc() extends Bloc<RegistrationFormEvent, RegistrationFor
       ));
     });
 
+    on<CountryOfResidenceChanged>((event, emit) {
+      emit(state.copyWith(
+        countryOfResidence: CountryInputState.dirty(event.value)
+      ));
+    });
+
     on<PhoneNumberChanged>((event, emit) {
       emit(state.copyWith(
         phoneNumber: PhoneNumberInputState.dirty(event.value)

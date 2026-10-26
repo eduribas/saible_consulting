@@ -56,8 +56,8 @@ Add `phone_number_form_field` and [`saible_consulting_core`](https://pub.dev/pac
 
 ```yaml
 dependencies:
-  phone_number_form_field: ^1.0.4
-  saible_consulting_core: ^1.0.4
+  phone_number_form_field: ^1.0.5
+  saible_consulting_core: ^1.0.5
 ```
 
 > **UI library:** this package is built on `material_ui`, the official Flutter
@@ -210,6 +210,37 @@ The validator runs whenever the enclosing `Form` validates - through
 `null` until the number is complete and valid, so a single `state.isValid` check
 covers empty, partial and malformed input; inspect `state.rawText` instead when
 you want to distinguish "required" from "malformed".
+
+### Restricting the Dial Code List
+
+Offer only a subset of countries with `include`, drop some with `exclude`, or
+apply a dynamic `filter` predicate that is evaluated on every build:
+
+```dart
+// Opt in to a short list
+PhoneNumberFormField(
+  include: const [Iso3166Country.unitedKingdom, Iso3166Country.ireland],
+  decoration: const InputDecoration(labelText: 'Mobile Phone'),
+)
+
+// Opt out of the countries you cannot serve
+PhoneNumberFormField(
+  exclude: const [Iso3166Country.unitedKingdom],
+  decoration: const InputDecoration(labelText: 'Mobile Phone'),
+)
+
+// Filter dynamically, e.g. only countries on a +44 dial code
+PhoneNumberFormField(
+  filter: (country) => country.phoneCode == 44,
+  decoration: const InputDecoration(labelText: 'Mobile Phone'),
+)
+```
+
+At most one of `include`, `exclude` and `filter` may be supplied, which is
+enforced by an assertion. The restriction applies to the picker's search as well
+as its list, and the field's implicit default dial code is always resolved to a
+country that is still on offer. An explicit `initialValue` is used exactly as
+given, so it is up to the caller to keep it compatible.
 
 ### Input Decoration
 

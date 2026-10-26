@@ -19,6 +19,8 @@
   "dateOfBirthLabel": "Date de naissance",
   "nationalityErrorRequired": "Votre nationalité est obligatoire.",
   "nationalityLabel": "Nationalité",
+  "countryOfResidenceErrorRequired": "Votre pays de résidence est obligatoire.",
+  "countryOfResidenceLabel": "Pays de résidence",
   "phoneNumberErrorRequired": "Votre numéro de téléphone est obligatoire.",
   "phoneNumberErrorInvalid": "Un numéro de téléphone valide est requis.",
   "phoneNumberLabel": "Numéro de téléphone",
@@ -26,6 +28,7 @@
   "formValidated": "Formulaire validé !",
   "dateOfBirthPrefix": "Date de naissance",
   "nationalityPrefix": "Nationalité",
+  "countryOfResidencePrefix": "Pays de résidence",
   "phonePrefix": "Téléphone",
   "languageMenuTooltip": "Langue"
 }

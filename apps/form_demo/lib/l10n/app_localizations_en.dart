@@ -42,6 +42,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nationalityLabel => 'Nationality';
 
   @override
+  String get countryOfResidenceErrorRequired => 'Your country of residence is required.';
+
+  @override
+  String get countryOfResidenceLabel => 'Country of Residence';
+
+  @override
   String get phoneNumberErrorRequired => 'Your phone number is required.';
 
   @override
@@ -61,6 +67,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nationalityPrefix => 'Nationality';
+
+  @override
+  String get countryOfResidencePrefix => 'Country of Residence';
 
   @override
   String get phonePrefix => 'Phone';
@@ -106,6 +115,12 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get nationalityLabel => 'Nationality';
 
   @override
+  String get countryOfResidenceErrorRequired => 'Your country of residence is required.';
+
+  @override
+  String get countryOfResidenceLabel => 'Country of Residence';
+
+  @override
   String get phoneNumberErrorRequired => 'Your phone number is required.';
 
   @override
@@ -125,6 +140,9 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get nationalityPrefix => 'Nationality';
+
+  @override
+  String get countryOfResidencePrefix => 'Country of Residence';
 
   @override
   String get phonePrefix => 'Phone';

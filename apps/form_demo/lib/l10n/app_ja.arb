@@ -19,6 +19,8 @@
   "dateOfBirthLabel": "生年月日",
   "nationalityErrorRequired": "国籍は必須です。",
   "nationalityLabel": "国籍",
+  "countryOfResidenceErrorRequired": "居住国は必須です。",
+  "countryOfResidenceLabel": "居住国",
   "phoneNumberErrorRequired": "電話番号は必須です。",
   "phoneNumberErrorInvalid": "有効な電話番号を入力してください。",
   "phoneNumberLabel": "電話番号",
@@ -26,6 +28,7 @@
   "formValidated": "フォームが検証されました！",
   "dateOfBirthPrefix": "生年月日",
   "nationalityPrefix": "国籍",
+  "countryOfResidencePrefix": "居住国",
   "phonePrefix": "電話",
   "languageMenuTooltip": "言語"
 }

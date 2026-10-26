@@ -51,6 +51,15 @@ final class NationalityChanged({required this.value}) extends RegistrationFormEv
   final Iso3166Country value;
 }
 
+/// Event triggered when the user picks a country of residence.
+final class CountryOfResidenceChanged({required this.value}) extends RegistrationFormEvent {
+  /// Creates a [CountryOfResidenceChanged] event.
+  this;
+
+  /// The selected [Iso3166Country].
+  final Iso3166Country value;
+}
+
 /// Event triggered when the user modifies the phone number input.
 final class PhoneNumberChanged({required this.value}) extends RegistrationFormEvent {
   /// Creates a [PhoneNumberChanged] event.

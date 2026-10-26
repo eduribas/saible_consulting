@@ -195,5 +195,16 @@ void main() {
       await tester.tap(find.text('France'));
       expect(phoneCodeTapped, isTrue);
     });
+
+    test('throws AssertionError if include and exclude are both provided', () {
+      expect(
+        () => CountriesProvider(
+          include: const [Iso3166Country.france],
+          exclude: const [Iso3166Country.germany],
+          child: const SizedBox(),
+        ),
+        throwsAssertionError,
+      );
+    });
   });
 }

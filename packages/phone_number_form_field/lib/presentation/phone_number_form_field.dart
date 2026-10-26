@@ -44,6 +44,7 @@ class const _PhoneNumberField({
   this.onFieldSubmitted,
   this.validator,
   this.onSaved,
+  this.filter,
 }) extends StatefulWidget {
   final FocusNode? focusNode;
   final InputDecoration? decoration;
@@ -52,6 +53,7 @@ class const _PhoneNumberField({
   final PhoneNumberState? initialValue;
   final String? Function(PhoneNumberState state)? validator;
   final void Function(PhoneNumberState state)? onSaved;
+  final bool Function(Iso3166Country)? filter;
 
   @override
   State<_PhoneNumberField> createState() => _PhoneNumberFieldState();
@@ -81,23 +83,32 @@ class _PhoneNumberFieldState() extends State<_PhoneNumberField> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final locale = Localizations.maybeLocaleOf(context);
-    if (locale == _lastLocale) return;
-    _lastLocale = locale;
-    // Force a rebuild when the locale changes, so that the suggestions builder is always up to
-    // date with the current language
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        _lastLocale = locale;
-      });
-      if (_controller.text.isEmpty) {
-        final country = Iso3166Country.values.firstWhereOrNull((c) => c.alpha2 == locale?.countryCode);
-        if (country != null) {
-          setState(() {
-            _selectedCountry = country;
-          });
-        }
+    final localeChanged = locale != _lastLocale;
+    if (localeChanged) _lastLocale = locale;
+    // The implicit default selection has to be a country that is actually on
+    // offer, so it is resolved against the available countries: the app locale's
+    // country when the locale changed, then the current selection while it is
+    // still on offer, then simply the first country that is on offer. A
+    // caller-supplied initialValue fills the controller, so it is left to the
+    // caller to keep compatible with include/exclude/filter.
+    if (_controller.text.isEmpty) {
+      final countries = context.read<Countries>().countries;
+      final localeCountry = localeChanged ? countries.firstWhereOrNull((c) => c.alpha2 == locale?.countryCode) : null;
+      final defaultCountry = localeCountry ??
+          (countries.contains(_selectedCountry) ? _selectedCountry : countries.firstOrNull);
+      if (defaultCountry != null) {
+        _selectedCountry = defaultCountry;
       }
-    });
+    }
+    if (localeChanged) {
+      // Force a rebuild when the locale changes, so that the suggestions builder is always up to
+      // date with the current language
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _lastLocale = locale;
+        });
+      });
+    }
   }
 
   @override
@@ -117,10 +128,13 @@ class _PhoneNumberFieldState() extends State<_PhoneNumberField> {
   @override
   Widget build(BuildContext context) {
     final onPhoneNumberChanged = widget.onPhoneNumberChanged;
-    final searchTerms = context.watch<Countries>().phoneSearchTerms;
+    final filter = widget.filter;
+    final countries = filter == null
+      ? context.watch<Countries>()
+      : context.watch<Countries>().where(context, filter);
     // Built once per rebuild (not per keystroke) since the search terms
     // are stable for the current locale.
-    final textSearch = TextSearch(searchTerms);
+    final textSearch = TextSearch(countries.phoneSearchTerms);
     return TextFormField(
       key: PhoneNumberFormField.textInputKey,
       focusNode: widget.focusNode,
@@ -197,6 +211,9 @@ class PhoneNumberFormField({
   this.onFieldSubmitted,
   this.validator,
   this.onSaved,
+  this.include,
+  this.exclude,
+  this.filter,
 }) extends StatelessWidget {
   /// Creates a [PhoneNumberFormField].
   this {
@@ -206,6 +223,10 @@ class PhoneNumberFormField({
     assert(
       prefix == null && prefixIcon == null && prefixText == null,
       'PhoneNumberFormField cannot specify any prefix in decoration as it uses an interactive prefix dial code.',
+    );
+    assert(
+      <Object?>[include, exclude, filter].where((e) => e != null).length <= 1,
+      'Only one of include, exclude and filter can be used at any one time.',
     );
   }
 
@@ -240,6 +261,13 @@ class PhoneNumberFormField({
   final void Function(String)? onFieldSubmitted;
 
   /// An optional initial value to populate the field with.
+  ///
+  /// This is an explicit selection and is used exactly as given, unlike the
+  /// implicit default, which is always resolved to a country that is on offer.
+  /// It is up to the caller to keep it compatible with
+  /// [PhoneNumberFormField.include], [PhoneNumberFormField.exclude] and
+  /// [PhoneNumberFormField.filter]: if it names a country that is not on offer,
+  /// the field still displays and parses against that country.
   final PhoneNumberState? initialValue;
 
   /// Validates the current [PhoneNumberState] whenever the enclosing [Form]
@@ -258,14 +286,41 @@ class PhoneNumberFormField({
   /// Callback invoked with the current [PhoneNumberState] when the enclosing
   /// [Form] saves, i.e. through `Form.save()`.
   final void Function(PhoneNumberState state)? onSaved;
+
+  /// An opt-in list of countries to include in the dial code picker.
+  ///
+  /// Cannot be used at the same time as [PhoneNumberFormField.exclude] or
+  /// [PhoneNumberFormField.filter], which is enforced by an assertion.
+  final List<Iso3166Country>? include;
+
+  /// An opt-out list of countries to exclude from the dial code picker.
+  ///
+  /// Cannot be used at the same time as [PhoneNumberFormField.include] or
+  /// [PhoneNumberFormField.filter], which is enforced by an assertion.
+  final List<Iso3166Country>? exclude;
+
+  /// A dynamic filter applied to the countries offered by the dial code picker.
+  ///
+  /// Cannot be used at the same time as [PhoneNumberFormField.include] or
+  /// [PhoneNumberFormField.exclude], which is enforced by an assertion.
+  ///
+  /// Use with caution, as this filter will be applied in the build() step, which
+  /// may be invoked dozens of times per second.
+  final bool Function(Iso3166Country)? filter;
+
   @override
-  Widget build(BuildContext context) => CountriesProvider(child: _PhoneNumberField(
-    focusNode: focusNode,
-    initialValue: initialValue,
-    decoration: decoration,
-    onPhoneNumberChanged: onPhoneNumberChanged,
-    onFieldSubmitted: onFieldSubmitted,
-    validator: validator,
-    onSaved: onSaved,
-  ));
+  Widget build(BuildContext context) => CountriesProvider(
+    include: include,
+    exclude: exclude,
+    child: _PhoneNumberField(
+      focusNode: focusNode,
+      initialValue: initialValue,
+      decoration: decoration,
+      onPhoneNumberChanged: onPhoneNumberChanged,
+      onFieldSubmitted: onFieldSubmitted,
+      validator: validator,
+      onSaved: onSaved,
+      filter: filter,
+    ),
+  );
 }

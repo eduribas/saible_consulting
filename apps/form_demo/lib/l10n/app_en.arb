@@ -19,6 +19,8 @@
   "dateOfBirthLabel": "Date of Birth",
   "nationalityErrorRequired": "Your nationality is required.",
   "nationalityLabel": "Nationality",
+  "countryOfResidenceErrorRequired": "Your country of residence is required.",
+  "countryOfResidenceLabel": "Country of Residence",
   "phoneNumberErrorRequired": "Your phone number is required.",
   "phoneNumberErrorInvalid": "A valid phone number is required.",
   "phoneNumberLabel": "Phone Number",
@@ -26,6 +28,7 @@
   "formValidated": "Form Validated!",
   "dateOfBirthPrefix": "DoB",
   "nationalityPrefix": "Nationality",
+  "countryOfResidencePrefix": "Country of Residence",
   "phonePrefix": "Phone",
   "languageMenuTooltip": "Language"
 }
