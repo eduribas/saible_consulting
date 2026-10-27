@@ -19,6 +19,13 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:saible_consulting_core/saible_consulting_core.dart';
 
+/// Whether [entry] carries the trailing-favourite divider: the bottom border
+/// drawn beneath the last favourite's menu item in dropdown mode.
+bool hasFavoritesDivider(DropdownMenuEntry<Iso3166Country> entry) {
+  final shape = entry.style?.shape?.resolve(const <WidgetState>{});
+  return shape is LinearBorder && shape.bottom != null;
+}
+
 void main() {
   Widget buildTestWidget({
     Locale locale = const Locale('en', 'GB'),
@@ -568,13 +575,8 @@ void main() {
         Iso3166Country.brazil,
       ]);
       // Only the final favourite is trailed by the divider.
-      expect(entries[1].labelWidget, isNotNull);
-      expect(entries.where((entry) => entry.labelWidget != null), hasLength(1));
-      // The divider is actually laid out across the menu entry (which is at least
-      // 112 wide), rather than collapsing to its intrinsic width.
-      final divider = find.byKey(CountryPickerFormField.favoritesDividerKey).first;
-      expect(tester.getSize(divider).width, greaterThan(100));
-      expect(tester.getSize(divider).height, greaterThan(0));
+      expect(hasFavoritesDivider(entries[1]), isTrue);
+      expect(entries.where(hasFavoritesDivider), hasLength(1));
     });
 
     testWidgets('shows the plain list when there are no favourites', (tester) async {
@@ -587,8 +589,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(dropdownMenu(tester).dropdownMenuEntries.every((entry) => entry.labelWidget == null), isTrue);
-      expect(find.byKey(CountryPickerFormField.favoritesDividerKey), findsNothing);
+      expect(dropdownMenu(tester).dropdownMenuEntries.any(hasFavoritesDivider), isFalse);
     });
 
     testWidgets('shows the plain list when every country is a favourite', (tester) async {
@@ -602,8 +603,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(dropdownMenu(tester).dropdownMenuEntries.every((entry) => entry.labelWidget == null), isTrue);
-      expect(find.byKey(CountryPickerFormField.favoritesDividerKey), findsNothing);
+      expect(dropdownMenu(tester).dropdownMenuEntries.any(hasFavoritesDivider), isFalse);
     });
 
     testWidgets('keeps the divider beside the last favourite while filtering', (tester) async {
@@ -624,10 +624,10 @@ void main() {
         'Zimb',
       );
       expect(filtered.first.value, Iso3166Country.zimbabwe);
-      expect(filtered.first.labelWidget, isNotNull);
+      expect(hasFavoritesDivider(filtered.first), isTrue);
       // A non-favourite matches too, so the divider is warranted.
       expect(filtered.map((entry) => entry.value), contains(Iso3166Country.zambia));
-      expect(filtered.where((entry) => entry.labelWidget != null), hasLength(1));
+      expect(filtered.where(hasFavoritesDivider), hasLength(1));
     });
 
     testWidgets('filterCallback keeps every entry for an empty filter', (tester) async {
@@ -987,7 +987,12 @@ void main() {
         Iso3166Country.france,
         Iso3166Country.germany,
       ]);
-      expect(find.byKey(CountryPickerFormField.favoritesDividerKey), findsWidgets);
+      // Only the favourite that survived the include list is underlined; the
+      // dropped Brazil favourite contributes no divider.
+      final entries = tester
+          .widget<DropdownMenu<Iso3166Country>>(find.byType(DropdownMenu<Iso3166Country>))
+          .dropdownMenuEntries;
+      expect(entries.where(hasFavoritesDivider).map((entry) => entry.value), [Iso3166Country.zimbabwe]);
     });
   });
 }

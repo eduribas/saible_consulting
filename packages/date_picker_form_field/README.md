@@ -61,7 +61,7 @@ Add `date_picker_form_field` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  date_picker_form_field: ^1.0.5
+  date_picker_form_field: ^1.0.6
 ```
 
 > **UI library:** this package is built on `material_ui`, the official Flutter

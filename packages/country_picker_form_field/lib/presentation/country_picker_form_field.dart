@@ -37,25 +37,6 @@ class const _DefaultSuffix({
   }
 }
 
-/// The label of the final favourite dropdown entry: the country name with a
-/// [Divider] beneath it, separating the favourites from the remaining countries.
-class const _FavoritesDividerLabel({required this.label}) extends StatelessWidget {
-  /// The country name displayed above the divider.
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    // Stretch, so the divider spans the width of the menu entry rather than
-    // collapsing to its intrinsic (zero) width.
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Text(label),
-      const Divider(key: CountryPickerFormField.favoritesDividerKey, height: 1),
-    ],
-  );
-}
-
 /// The suggestions for a country search query, split into favourite and
 /// remaining matches so the two groups can be rendered separately.
 class _CountrySuggestions({
@@ -116,8 +97,8 @@ class _CountrySearch._(this._favorites, this._others) {
     final favorites = _favorites.fastSearch(query, limit: _maxSuggestions);
     final remaining = _maxSuggestions - favorites.length;
     final others = remaining > 0
-        ? _others.fastSearch(query, limit: remaining)
-        : const <Iso3166Country>[];
+      ? _others.fastSearch(query, limit: remaining)
+      : const <Iso3166Country>[];
     return _CountrySuggestions(favorites: favorites, others: others);
   }
 
@@ -131,6 +112,17 @@ class _CountrySearch._(this._favorites, this._others) {
     ..._favorites.fastSearch(query),
     ..._others.fastSearch(query),
   ];
+}
+
+class const _CountrySuffix({
+  required this.country
+}) extends StatelessWidget {
+  final Iso3166Country country;
+
+  @override
+  Widget build(BuildContext context) => FlagIcon.forIso3166(
+    country: country
+  );
 }
 
 class const _CountryPicker({
@@ -219,38 +211,43 @@ class _CountryPickerState() extends State<_CountryPicker> {
       final unfiltered = search.matches('');
       // DropdownMenu is not a FormField, so it is wrapped in one to give the
       // enclosing Form the typed validator and onSaved callbacks.
+      final country = chosenCountry;
       return FormField<Iso3166Country>(
-        initialValue: chosenCountry,
+        initialValue: country,
         validator: widget.validator,
         onSaved: widget.onSaved,
-        builder: (field) => DropdownMenu<Iso3166Country>(
-          key: CountryPickerFormField.countrySearchAnchorKey,
-          focusNode: widget.focusNode,
-          initialSelection: chosenCountry,
-          enableFilter: true,
-          // Typing to filter is only reachable on mobile if tapping the field may
-          // focus it and raise the keyboard; desktop already behaves this way.
-          requestFocusOnTap: true,
-          // The caller's decoration is applied to the inner field verbatim, with
-          // the validation error and our default error height layered on top. A
-          // caller-supplied suffixIcon wins; otherwise DropdownMenu contributes
-          // its own drop-down arrow.
-          decorationBuilder: (context, controller) => (widget.decoration ?? const InputDecoration()).copyWith(
-            errorText: field.errorText,
-            errorMaxLines: widget.decoration?.errorMaxLines ?? 2,
-          ),
-          // The entries are rebuilt from the matched countries rather than reused
-          // from the list DropdownMenu hands back, because it re-filters its own
-          // previous results on every rebuild. Rebuilding keeps the favourites
-          // divider beside the last favourite that is actually on screen.
-          filterCallback: (_, filter) => _dropdownEntries(context, search.matches(filter), favorites),
-          onSelected: (country) {
-            if (country == null) return;
-            setState(() { chosenCountry = country; });
-            field.didChange(country);
-            widget.onCountryPicked(country);
-          },
-          dropdownMenuEntries: _dropdownEntries(context, unfiltered, favorites),
+        builder: (field) => LayoutBuilder(
+          builder: (context, constraints) => DropdownMenu<Iso3166Country>(
+            key: CountryPickerFormField.countrySearchAnchorKey,
+            focusNode: widget.focusNode,
+            initialSelection: country,
+            enableFilter: true,
+            width: constraints.maxWidth,
+            // Typing to filter is only reachable on mobile if tapping the field may
+            // focus it and raise the keyboard; desktop already behaves this way.
+            requestFocusOnTap: true,
+            trailingIcon: country == null ? null : _CountrySuffix(country: country),
+            // The caller's decoration is applied to the inner field verbatim, with
+            // the validation error and our default error height layered on top. A
+            // caller-supplied suffixIcon wins; otherwise DropdownMenu contributes
+            // its own drop-down arrow.
+            decorationBuilder: (context, controller) => (widget.decoration ?? const InputDecoration()).copyWith(
+              errorText: field.errorText,
+              errorMaxLines: widget.decoration?.errorMaxLines ?? 2,
+            ),
+            // The entries are rebuilt from the matched countries rather than reused
+            // from the list DropdownMenu hands back, because it re-filters its own
+            // previous results on every rebuild. Rebuilding keeps the favourites
+            // divider beside the last favourite that is actually on screen.
+            filterCallback: (_, filter) => _dropdownEntries(context, search.matches(filter), favorites),
+            onSelected: (c) {
+              if (c == null) return;
+              setState(() { chosenCountry = c; });
+              field.didChange(c);
+              widget.onCountryPicked(c);
+            },
+            dropdownMenuEntries: _dropdownEntries(context, unfiltered, favorites),
+          )
         ),
       );
     }
@@ -283,11 +280,11 @@ class _CountryPickerState() extends State<_CountryPicker> {
   /// Builds the dropdown entries for [ordered] countries, which must list the
   /// caller's [favorites] ahead of the remaining countries.
   ///
-  /// When both groups are represented, the final favourite is trailed by a
-  /// [Divider] so the two read as separate sections. [DropdownMenu] has no
-  /// separator of its own, so the divider rides along in that entry's
-  /// [DropdownMenuEntry.labelWidget]. When only one group is present the plain
-  /// list is shown.
+  /// When both groups are represented, the final favourite is underlined with a
+  /// bottom border so the two read as separate sections. [DropdownMenu] has no
+  /// separator of its own, so the divider is expressed as a [LinearBorder]
+  /// bottom edge on that entry's [DropdownMenuEntry.style]. When only one group
+  /// is present the plain list is shown.
   List<DropdownMenuEntry<Iso3166Country>> _dropdownEntries(
     BuildContext context,
     List<Iso3166Country> ordered,
@@ -305,7 +302,11 @@ class _CountryPickerState() extends State<_CountryPicker> {
         value: country,
         label: label,
         leadingIcon: FlagIcon.forIso3166(country: country),
-        labelWidget: country == dividerAfter ? _FavoritesDividerLabel(label: label) : null,
+        style: country == dividerAfter ? MenuItemButton.styleFrom(
+          shape: LinearBorder.bottom(
+            side: BorderSide(color: Theme.of(context).dividerColor),
+          ),
+        ) : null,
       ));
     }
     return entries;
@@ -362,9 +363,12 @@ class CountryPickerFormField({
   static const Key countrySearchBarKey = Key('countryPicker_searchBar');
 
   /// The [Key] for the [Divider] separating favourites from the remaining
-  /// countries. Only present while both groups are represented: in the
-  /// suggestions view it divides the two groups of suggestions, and in the
-  /// dropdown it trails the final favourite entry.
+  /// countries in the suggestions view. Only present while both groups are
+  /// represented, so a lone group is never trailed by a stray divider.
+  ///
+  /// [CountryPickerMode.dropdown] expresses the same separation as a bottom
+  /// border on the final favourite's menu entry rather than a [Divider] widget,
+  /// so this key does not appear in that mode.
   static const Key favoritesDividerKey = Key('countryPicker_favoritesDivider');
 
   /// Creates a [CountryPickerFormField].

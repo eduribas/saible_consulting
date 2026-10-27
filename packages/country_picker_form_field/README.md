@@ -57,8 +57,8 @@ Add `country_picker_form_field` and [`saible_consulting_core`](https://pub.dev/p
 
 ```yaml
 dependencies:
-  country_picker_form_field: ^1.0.5
-  saible_consulting_core: ^1.0.5
+  country_picker_form_field: ^1.0.6
+  saible_consulting_core: ^1.0.6
 ```
 
 > **UI library:** this package is built on `material_ui`, the official Flutter
@@ -311,8 +311,8 @@ CountryPickerFormField(
 Favourites are still filtered by the active search query, so a favourite that
 does not match what the user has typed is not shown, and the divider only
 appears while both a favourite and a non-favourite match are present. The same
-applies in `CountryPickerMode.dropdown`, where the divider trails the final
-favourite entry in the menu.
+applies in `CountryPickerMode.dropdown`, where the final favourite's menu entry
+is underlined with a bottom border instead of a `Divider` widget.
 
 ---
 
@@ -322,7 +322,7 @@ favourite entry in the menu.
 
 - `CountryPickerFormField.countrySearchAnchorKey`: The `SearchAnchor` widget key.
 - `CountryPickerFormField.countrySearchBarKey`: The search entry `TextFormField` key.
-- `CountryPickerFormField.favoritesDividerKey`: The `Divider` separating favourite from remaining suggestions (only present while both groups contribute a suggestion).
+- `CountryPickerFormField.favoritesDividerKey`: The `Divider` separating favourite from remaining suggestions in the suggestions view (only present while both groups contribute a suggestion).
 
 In widget tests, you can find and interact with the search bar reliably:
 
