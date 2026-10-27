@@ -1,3 +1,19 @@
+## 1.0.6
+
+* The `CountryPickerMode.dropdown` menu now spans the full width of its parent,
+  so it lines up with the fields around it instead of collapsing to the
+  `DropdownMenu` default width.
+* The dropdown now shows the selected country's flag as a trailing icon, giving
+  it the same affordance as the search-anchor view.
+* The favourites/remaining separator in the dropdown is now drawn as a bottom
+  border on the final favourite's menu entry rather than an inline `Divider`, so
+  it spans the full width of the entry.
+* `CountryPickerFormField.favoritesDividerKey` is unchanged and still marks the
+  `Divider` between the two groups of suggestions in the search-anchor view; the
+  dropdown expresses the same separation as an entry border instead.
+* Bumped version to `1.0.6` across the Saible Consulting package suite.
+* Bumped `saible_consulting_core` dependency constraint to `^1.0.6`.
+
 ## 1.0.5
 
 * Added `CountryPickerMode`, allowing the picker to open either as a search view

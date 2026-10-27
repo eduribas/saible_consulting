@@ -1,3 +1,8 @@
+## 1.0.6
+
+* Bumped version to `1.0.6` across the Saible Consulting package suite.
+* Bumped `saible_consulting_core` dependency constraint to `^1.0.6`.
+
 ## 1.0.5
 
 * Added optional `include` and `exclude` lists and a dynamic `filter` predicate

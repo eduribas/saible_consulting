@@ -1,3 +1,10 @@
+## 1.0.6
+
+* `FlagIcon.forIso3166` accepts an optional `style`, letting callers override the
+  flag emoji's text style instead of always inheriting `headlineSmall` from the
+  surrounding theme.
+* Bumped version to `1.0.6` across the Saible Consulting package suite.
+
 ## 1.0.5
 
 * Added optional `include` and `exclude` lists to `CountriesProvider`, so the

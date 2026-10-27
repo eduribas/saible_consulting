@@ -196,6 +196,29 @@ void main() {
       expect(phoneCodeTapped, isTrue);
     });
 
+    testWidgets('FlagIcon.forIso3166 honours a style override and otherwise inherits the theme headlineSmall style', (tester) async {
+      const override = TextStyle(fontSize: 12, color: Color(0xFF123456));
+      late TextStyle? themeStyle;
+
+      Widget harness({TextStyle? style}) => MaterialApp(
+            theme: ThemeData(splashFactory: InkRipple.splashFactory),
+            home: Builder(
+              builder: (context) {
+                themeStyle = Theme.of(context).textTheme.headlineSmall;
+                return Scaffold(
+                  body: FlagIcon.forIso3166(country: Iso3166Country.germany, style: style),
+                );
+              },
+            ),
+          );
+
+      await tester.pumpWidget(harness(style: override));
+      expect(tester.widget<Text>(find.text(Iso3166Country.germany.flagEmoji())).style, override);
+
+      await tester.pumpWidget(harness());
+      expect(tester.widget<Text>(find.text(Iso3166Country.germany.flagEmoji())).style, themeStyle);
+    });
+
     test('throws AssertionError if include and exclude are both provided', () {
       expect(
         () => CountriesProvider(
