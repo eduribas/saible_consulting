@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'dart:ui';
+
 import 'package:collection/collection.dart';
 import 'package:dlibphonenumber/dlibphonenumber.dart' hide Locale;
 import 'package:flutter/scheduler.dart';
@@ -32,7 +34,7 @@ String? _getE164Number(String rawValue, Iso3166Country country) {
   } catch (_) {
     return null;
   }
-  
+
   return null;
 }
 
@@ -82,7 +84,7 @@ class _PhoneNumberFieldState() extends State<_PhoneNumberField> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final locale = Localizations.maybeLocaleOf(context);
+    final locale = PlatformDispatcher.instance.locale ?? Localizations.maybeLocaleOf(context);
     final localeChanged = locale != _lastLocale;
     if (localeChanged) _lastLocale = locale;
     // The implicit default selection has to be a country that is actually on
@@ -94,8 +96,8 @@ class _PhoneNumberFieldState() extends State<_PhoneNumberField> {
     if (_controller.text.isEmpty) {
       final countries = context.read<Countries>().countries;
       final localeCountry = localeChanged ? countries.firstWhereOrNull((c) => c.alpha2 == locale?.countryCode) : null;
-      final defaultCountry = localeCountry ??
-          (countries.contains(_selectedCountry) ? _selectedCountry : countries.firstOrNull);
+      final defaultCountry =
+          localeCountry ?? (countries.contains(_selectedCountry) ? _selectedCountry : countries.firstOrNull);
       if (defaultCountry != null) {
         _selectedCountry = defaultCountry;
       }
@@ -129,9 +131,7 @@ class _PhoneNumberFieldState() extends State<_PhoneNumberField> {
   Widget build(BuildContext context) {
     final onPhoneNumberChanged = widget.onPhoneNumberChanged;
     final filter = widget.filter;
-    final countries = filter == null
-      ? context.watch<Countries>()
-      : context.watch<Countries>().where(context, filter);
+    final countries = filter == null ? context.watch<Countries>() : context.watch<Countries>().where(context, filter);
     // Built once per rebuild (not per keystroke) since the search terms
     // are stable for the current locale.
     final textSearch = TextSearch(countries.phoneSearchTerms);
@@ -237,21 +237,19 @@ class PhoneNumberFormField({
   static const textInputKey = Key('phoneNumberTextField_textInput');
 
   /// Generates a [Key] for a country suggestion tile based on the country's alpha2 code.
-  static Key countrySuggestionKey(Iso3166Country country) => Key(
-    'phoneNumberTextField_country_${country.alpha2}'
-  );
+  static Key countrySuggestionKey(Iso3166Country country) => Key('phoneNumberTextField_country_${country.alpha2}');
 
   /// An optional [FocusNode] to control the focus of the text input.
   final FocusNode? focusNode;
 
   /// The decoration applied to the underlying [TextFormField].
-  /// 
+  ///
   /// This allows you to apply rich features to the field, such as floating labels, borders,
   /// and error handling. However, a runtime assertion will be thrown if you provide a prefix,
   /// as the prefix is used to provide the mandatory international number code.
-  /// 
+  ///
   /// If you provide a hint, you will lose the locale-aware phone number masking feature provided
-  /// by this package. 
+  /// by this package.
   final InputDecoration? decoration;
 
   /// Callback invoked when the phone number input changes or country selection changes.
