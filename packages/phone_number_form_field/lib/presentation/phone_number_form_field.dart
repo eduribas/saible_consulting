@@ -32,7 +32,7 @@ String? _getE164Number(String rawValue, Iso3166Country country) {
   } catch (_) {
     return null;
   }
-  
+
   return null;
 }
 
@@ -45,6 +45,7 @@ class const _PhoneNumberField({
   this.validator,
   this.onSaved,
   this.filter,
+  required this.scrollPadding,
 }) extends StatefulWidget {
   final FocusNode? focusNode;
   final InputDecoration? decoration;
@@ -54,6 +55,7 @@ class const _PhoneNumberField({
   final String? Function(PhoneNumberState state)? validator;
   final void Function(PhoneNumberState state)? onSaved;
   final bool Function(Iso3166Country)? filter;
+  final EdgeInsets scrollPadding;
 
   @override
   State<_PhoneNumberField> createState() => _PhoneNumberFieldState();
@@ -70,8 +72,12 @@ class _PhoneNumberFieldState() extends State<_PhoneNumberField> {
     final initialValue = widget.initialValue;
     if (initialValue != null && initialValue.isNotEmpty) {
       final phoneNumber = phoneUtil.parse(initialValue.e164, null);
-      final regionCode = phoneUtil.getRegionCodeForNumber(phoneNumber)?.toLowerCase();
-      final country = Iso3166Country.values.firstWhereOrNull((c) => c.alpha2.toLowerCase() == regionCode);
+      final regionCode = phoneUtil
+          .getRegionCodeForNumber(phoneNumber)
+          ?.toLowerCase();
+      final country = Iso3166Country.values.firstWhereOrNull(
+        (c) => c.alpha2.toLowerCase() == regionCode,
+      );
       if (country != null) {
         _selectedCountry = country;
         _controller.text = phoneNumber.internationalFormatWithoutTrunk();
@@ -93,9 +99,14 @@ class _PhoneNumberFieldState() extends State<_PhoneNumberField> {
     // caller to keep compatible with include/exclude/filter.
     if (_controller.text.isEmpty) {
       final countries = context.read<Countries>().countries;
-      final localeCountry = localeChanged ? countries.firstWhereOrNull((c) => c.alpha2 == locale?.countryCode) : null;
-      final defaultCountry = localeCountry ??
-          (countries.contains(_selectedCountry) ? _selectedCountry : countries.firstOrNull);
+      final localeCountry = localeChanged
+          ? countries.firstWhereOrNull((c) => c.alpha2 == locale?.countryCode)
+          : null;
+      final defaultCountry =
+          localeCountry ??
+          (countries.contains(_selectedCountry)
+              ? _selectedCountry
+              : countries.firstOrNull);
       if (defaultCountry != null) {
         _selectedCountry = defaultCountry;
       }
@@ -130,8 +141,8 @@ class _PhoneNumberFieldState() extends State<_PhoneNumberField> {
     final onPhoneNumberChanged = widget.onPhoneNumberChanged;
     final filter = widget.filter;
     final countries = filter == null
-      ? context.watch<Countries>()
-      : context.watch<Countries>().where(context, filter);
+        ? context.watch<Countries>()
+        : context.watch<Countries>().where(context, filter);
     // Built once per rebuild (not per keystroke) since the search terms
     // are stable for the current locale.
     final textSearch = TextSearch(countries.phoneSearchTerms);
@@ -143,7 +154,8 @@ class _PhoneNumberFieldState() extends State<_PhoneNumberField> {
       inputFormatters: [
         AsYouTypePhoneNumberFormatter(
           country: _selectedCountry,
-          onFormatFinished: (value) => onPhoneNumberChanged?.call(_stateFor(value)),
+          onFormatFinished: (value) =>
+              onPhoneNumberChanged?.call(_stateFor(value)),
         ),
       ],
       // Typed form integration: the enclosing Form validates and saves the
@@ -152,25 +164,36 @@ class _PhoneNumberFieldState() extends State<_PhoneNumberField> {
       onSaved: (_) => widget.onSaved?.call(_stateFor(_controller.text)),
       onFieldSubmitted: widget.onFieldSubmitted,
       decoration: (widget.decoration ?? const InputDecoration()).copyWith(
-        hintText: widget.decoration?.hintText ?? _selectedCountry.examplePhoneNumberWithoutTrunk(),
+        hintText:
+            widget.decoration?.hintText ??
+            _selectedCountry.examplePhoneNumberWithoutTrunk(),
         errorMaxLines: widget.decoration?.errorMaxLines ?? 2,
         prefixIcon: SearchAnchor(
           key: PhoneNumberFormField.countrySearchAnchorKey,
           shrinkWrap: true,
           builder: (context, controller) => InkWell(
-            borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+            borderRadius: const BorderRadius.horizontal(
+              left: Radius.circular(12),
+            ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(_selectedCountry.flagEmoji(), style: const TextStyle(fontSize: 20)),
+                  Text(
+                    _selectedCountry.flagEmoji(),
+                    style: const TextStyle(fontSize: 20),
+                  ),
                   const SizedBox(width: 6),
                   Text('+${_selectedCountry.phoneCode}'),
                   const Icon(Icons.arrow_drop_down),
                   const SizedBox(width: 4),
                   // Vertical divider separating prefix control from text field
-                  Container(height: 24, width: 1, color: Theme.of(context).colorScheme.outlineVariant),
+                  Container(
+                    height: 24,
+                    width: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ],
               ),
             ),
@@ -197,6 +220,7 @@ class _PhoneNumberFieldState() extends State<_PhoneNumberField> {
           },
         ),
       ),
+      scrollPadding: widget.scrollPadding,
     );
   }
 }
@@ -214,6 +238,7 @@ class PhoneNumberFormField({
   this.include,
   this.exclude,
   this.filter,
+  this.scrollPadding = const EdgeInsets.all(20.0),
 }) extends StatelessWidget {
   /// Creates a [PhoneNumberFormField].
   this {
@@ -231,27 +256,28 @@ class PhoneNumberFormField({
   }
 
   /// The [Key] for the country search anchor prefix icon button.
-  static const Key countrySearchAnchorKey = Key('phoneNumberTextField_searchAnchor');
+  static const Key countrySearchAnchorKey = Key(
+    'phoneNumberTextField_searchAnchor',
+  );
 
   /// The [Key] for the phone number text input search/entry field.
   static const textInputKey = Key('phoneNumberTextField_textInput');
 
   /// Generates a [Key] for a country suggestion tile based on the country's alpha2 code.
-  static Key countrySuggestionKey(Iso3166Country country) => Key(
-    'phoneNumberTextField_country_${country.alpha2}'
-  );
+  static Key countrySuggestionKey(Iso3166Country country) =>
+      Key('phoneNumberTextField_country_${country.alpha2}');
 
   /// An optional [FocusNode] to control the focus of the text input.
   final FocusNode? focusNode;
 
   /// The decoration applied to the underlying [TextFormField].
-  /// 
+  ///
   /// This allows you to apply rich features to the field, such as floating labels, borders,
   /// and error handling. However, a runtime assertion will be thrown if you provide a prefix,
   /// as the prefix is used to provide the mandatory international number code.
-  /// 
+  ///
   /// If you provide a hint, you will lose the locale-aware phone number masking feature provided
-  /// by this package. 
+  /// by this package.
   final InputDecoration? decoration;
 
   /// Callback invoked when the phone number input changes or country selection changes.
@@ -308,6 +334,8 @@ class PhoneNumberFormField({
   /// may be invoked dozens of times per second.
   final bool Function(Iso3166Country)? filter;
 
+  final EdgeInsets scrollPadding;
+
   @override
   Widget build(BuildContext context) => CountriesProvider(
     include: include,
@@ -321,6 +349,7 @@ class PhoneNumberFormField({
       validator: validator,
       onSaved: onSaved,
       filter: filter,
+      scrollPadding: scrollPadding,
     ),
   );
 }
