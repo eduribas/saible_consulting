@@ -47,6 +47,7 @@ class const _PhoneNumberField({
   this.validator,
   this.onSaved,
   this.filter,
+  required this.scrollPadding,
 }) extends StatefulWidget {
   final FocusNode? focusNode;
   final InputDecoration? decoration;
@@ -56,6 +57,7 @@ class const _PhoneNumberField({
   final String? Function(PhoneNumberState state)? validator;
   final void Function(PhoneNumberState state)? onSaved;
   final bool Function(Iso3166Country)? filter;
+  final EdgeInsets scrollPadding;
 
   @override
   State<_PhoneNumberField> createState() => _PhoneNumberFieldState();
@@ -197,6 +199,7 @@ class _PhoneNumberFieldState() extends State<_PhoneNumberField> {
           },
         ),
       ),
+      scrollPadding: widget.scrollPadding,
     );
   }
 }
@@ -214,6 +217,7 @@ class PhoneNumberFormField({
   this.include,
   this.exclude,
   this.filter,
+  this.scrollPadding = const EdgeInsets.all(20.0),
 }) extends StatelessWidget {
   /// Creates a [PhoneNumberFormField].
   this {
@@ -306,6 +310,8 @@ class PhoneNumberFormField({
   /// may be invoked dozens of times per second.
   final bool Function(Iso3166Country)? filter;
 
+  final EdgeInsets scrollPadding;
+
   @override
   Widget build(BuildContext context) => CountriesProvider(
     include: include,
@@ -319,6 +325,7 @@ class PhoneNumberFormField({
       validator: validator,
       onSaved: onSaved,
       filter: filter,
+      scrollPadding: scrollPadding,
     ),
   );
 }
